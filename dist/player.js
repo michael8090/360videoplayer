@@ -140,7 +140,12 @@
 	
 	        this.sensorControls = new DeviceOrientationController(camera, renderer.domElement);
 	        this.sensorControls.connect();
-	        this.enableSensor();
+	
+	        if (enableSensorControl) {
+	            this.enableSensor();
+	        } else {
+	            this.disableSensor();
+	        }
 	
 	        container.appendChild(renderer.domElement);
 	
@@ -155,6 +160,28 @@
 	            var videoUrl = arguments.length <= 0 || arguments[0] === undefined ? '' : arguments[0];
 	
 	            this.video.firstElementChild.setAttribute('src', videoUrl);
+	        }
+	    }, {
+	        key: 'getDuration',
+	        value: function getDuration() {
+	            return this.video.duration;
+	        }
+	    }, {
+	        key: 'setTime',
+	        value: function setTime() {
+	            var time = arguments.length <= 0 || arguments[0] === undefined ? 0 : arguments[0];
+	
+	            this.video.currentTime = time;
+	        }
+	    }, {
+	        key: 'play',
+	        value: function play() {
+	            this.video.play();
+	        }
+	    }, {
+	        key: 'pause',
+	        value: function pause() {
+	            this.video.pause();
 	        }
 	    }]);
 	
@@ -181,11 +208,11 @@
 	    };
 	
 	    this.enableSensor = function () {
-	        _this.sensorControls.enableManualDrag = false;
+	        _this.sensorControls.enableDeviceMove = false;
 	    };
 	
 	    this.disableSensor = function () {
-	        _this.sensorControls.enableManualDrag = true;
+	        _this.sensorControls.enableDeviceMove = true;
 	    };
 	}, _temp);
 

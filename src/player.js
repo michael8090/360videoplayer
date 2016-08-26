@@ -80,7 +80,12 @@ window.Player = module.exports = class Player {
 
         this.sensorControls = new DeviceOrientationController(camera, renderer.domElement);
         this.sensorControls.connect();
-        this.enableSensor();
+
+        if (enableSensorControl) {
+            this.enableSensor();
+        } else {
+            this.disableSensor();
+        }
 
         container.appendChild(renderer.domElement);
 
@@ -107,15 +112,31 @@ window.Player = module.exports = class Player {
         this.renderer.setSize(container.offsetWidth, container.offsetHeight);
     };
 
+    enableSensor = () => {
+        this.sensorControls.enableDeviceMove = false;
+    };
+
+    disableSensor = () => {
+        this.sensorControls.enableDeviceMove = true;
+    };
+
     loadVideo(videoUrl = '') {
         this.video.firstElementChild.setAttribute('src', videoUrl);
     };
 
-    enableSensor = () => {
-        this.sensorControls.enableManualDrag = false;
-    };
+    getDuration() {
+        return this.video.duration;
+    }
 
-    disableSensor = () => {
-        this.sensorControls.enableManualDrag = true;
-    };
+    setTime(time = 0) {
+        this.video.currentTime = time;
+    }
+
+    play() {
+        this.video.play();
+    }
+
+    pause() {
+        this.video.pause();
+    }
 };
