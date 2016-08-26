@@ -1,5 +1,7 @@
 /* global THREE */
 // var OrbitControls = require('three-orbit-controls')(THREE);
+var StereoEffect = require('three-stereo-effect')(THREE);
+var fullscreen = require('screenfull');
 
 function domFromString(htmlString) {
     const parent = document.createElement('div');
@@ -7,18 +9,19 @@ function domFromString(htmlString) {
     return parent.firstElementChild;
 }
 
-const isWebGLSupported =  (function (){
+const isWebGLSupported = (function () {
     try {
-        var canvas = document.createElement( 'canvas' );
-        return !! (window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
-    } catch(e) {
+        var canvas = document.createElement('canvas');
+        return !!(window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+    } catch (e) {
         return false;
     }
 })();
 
 
 window.Player = module.exports = class Player {
-    constructor({containerId, view, enableSensorControl = false} = {}) {
+    constructor({containerId, view, enableSensorControl = false, isOnStereoMode = false, isFullScreen = false} = {}) {
+        this.isOnStereoMode = isOnStereoMode;
         const container = document.getElementById(containerId);
         if (!container) {
             throw new Error(`container is not found: ${containerId}`);
@@ -64,6 +67,11 @@ window.Player = module.exports = class Player {
         renderer.setSize(container.offsetWidth, container.offsetHeight);
         this.renderer = renderer;
 
+        const stereoEffect = new StereoEffect(renderer);
+        stereoEffect.eyeSeparation = 1;
+        stereoEffect.setSize(w, h);
+        this.stereoEffect = stereoEffect;
+
         this.sensorControls = new DeviceOrientationController(camera, renderer.domElement);
         this.sensorControls.connect();
 
@@ -83,7 +91,11 @@ window.Player = module.exports = class Player {
 
     render = () => {
         this.sensorControls.update();
-        this.renderer.render(this.scene, this.camera);
+        if (this.isOnStereoMode) {
+            this.stereoEffect.render(this.scene, this.camera);
+        } else {
+            this.renderer.render(this.scene, this.camera);
+        }
     };
 
     animate = () => {
@@ -106,6 +118,17 @@ window.Player = module.exports = class Player {
     disableSensor = () => {
         this.sensorControls.enableDeviceMove = true;
     };
+
+    enableStereoMode = () => this.isOnStereoMode = true;
+
+    disableStereoMode = () => this.isOnStereoMode = false;
+
+    // we need to call inside an user action handler
+    enterFullScreen() {
+        if (fullscreen.enabled) {
+            fullscreen.request();
+        }
+    }
 
     loadVideo(videoUrl = '') {
         this.video.firstElementChild.setAttribute('src', videoUrl);
