@@ -53,12 +53,19 @@
 	
 	var _class, _temp, _initialiseProps;
 	
+	var _math = __webpack_require__(/*! ./math */ 3);
+	
+	var _math2 = _interopRequireDefault(_math);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
 	/* global THREE */
 	// var OrbitControls = require('three-orbit-controls')(THREE);
 	var StereoEffect = __webpack_require__(/*! three-stereo-effect */ 1)(THREE);
 	var fullscreen = __webpack_require__(/*! screenfull */ 2);
+	
 	
 	function domFromString(htmlString) {
 	    var parent = document.createElement('div');
@@ -101,30 +108,18 @@
 	
 	        var w = container.offsetWidth;
 	        var h = container.offsetHeight;
-	        var camera = new THREE.PerspectiveCamera(75, w / h, 1, 1000);
-	        camera.position.x = 0.01;
+	        var camera = new THREE.PerspectiveCamera(75, w / h, 0.01, 1000);
+	        camera.position.x = 0;
 	        camera.position.y = 0;
-	        camera.position.z = 0.01;
+	        camera.position.z = 0;
+	        camera.lookAt(new THREE.Vector3(0, 0, 1));
+	
 	        this.camera = camera;
 	
 	        this.scene = new THREE.Scene();
 	
-	        var video = domFromString('\n            <video style="display: none;" loop preload="auto" id="video" webkit-playsinline crossOrigin="anonymous">\n                <source type="video/mp4">\n            </video>');
-	        this.video = video;
-	        document.body.appendChild(video);
-	
-	        var texture = new THREE.VideoTexture(video);
-	        texture.minFilter = THREE.LinearFilter;
-	        texture.magFilter = THREE.LinearFilter;
-	        texture.format = THREE.RGBFormat;
-	
-	        var sphere = new THREE.Mesh(new THREE.SphereGeometry(100, 80, 80), new THREE.MeshBasicMaterial({
-	            map: texture
-	        }));
-	
-	        sphere.scale.x = -1;
-	        sphere.rotateY(Math.PI * 1.5);
-	        this.scene.add(sphere);
+	        this.createSphere();
+	        this.createArrow();
 	
 	        var renderer = isWebGLSupported ? new THREE.WebGLRenderer() : new THREE.CanvasRenderer();
 	        renderer.setSize(container.offsetWidth, container.offsetHeight);
@@ -155,6 +150,66 @@
 	    }
 	
 	    _createClass(Player, [{
+	        key: 'createSphere',
+	        value: function createSphere() {
+	            var video = domFromString('\n            <video style="display: none;" loop preload="auto" id="video" webkit-playsinline crossOrigin="anonymous">\n                <source type="video/mp4">\n            </video>\n        ');
+	            this.video = video;
+	            document.body.appendChild(video);
+	
+	            var texture = new THREE.VideoTexture(video);
+	            texture.minFilter = THREE.LinearFilter;
+	            texture.magFilter = THREE.LinearFilter;
+	            texture.format = THREE.RGBFormat;
+	
+	            var sphere = new THREE.Mesh(new THREE.SphereGeometry(100, 80, 80), new THREE.MeshBasicMaterial({
+	                map: texture,
+	                side: THREE.BackSide
+	            }));
+	
+	            sphere.rotateY(-Math.PI * 0.5);
+	
+	            this.scene.add(sphere);
+	        }
+	    }, {
+	        key: 'createArrow',
+	        value: function createArrow() {
+	            var loader = new THREE.TextureLoader();
+	            this.arrowMaterials = [1, 2, 3].map(function (i) {
+	                return loader.load('images/arr' + i + '.png');
+	            });
+	            this.currentArrowIndex = 0;
+	            this.arrow = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 2), new THREE.MeshPhongMaterial({
+	                map: this.arrowMaterials[this.currentArrowIndex],
+	                transparent: true,
+	                side: THREE.DoubleSide
+	            })
+	            // new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} ),
+	
+	            );
+	            // this.arrow.position.x = 0;
+	            // this.arrow.position.y = -3;
+	            // this.arrow.position.z = 10;
+	            // this.arrow.rotateY(-Math.PI * 0.5);
+	            var p = _math2.default.uv2xyz(0.5, 0.5, 10);
+	            this.arrow.position.x = p.x;
+	            this.arrow.position.y = p.y;
+	            this.arrow.position.z = p.z;
+	            this.arrow.rotateX(-Math.PI * 0.2);
+	            this.scene.add(this.arrow);
+	            this.lastDrawTime = Date.now();
+	        }
+	    }, {
+	        key: 'updateArrow',
+	        value: function updateArrow() {
+	            if (Date.now() - this.lastDrawTime < 300) {
+	                return;
+	            }
+	            this.lastDrawTime = Date.now();
+	            this.currentArrowIndex = (this.currentArrowIndex + 1) % this.arrowMaterials.length;
+	            this.arrow.material.map = this.arrowMaterials[this.currentArrowIndex];
+	            this.arrow.material.needUpdate = true;
+	        }
+	    }, {
 	        key: 'enterFullScreen',
 	
 	
@@ -198,6 +253,7 @@
 	    var _this2 = this;
 	
 	    this.render = function () {
+	        _this2.updateArrow();
 	        _this2.sensorControls.update();
 	        if (_this2.isOnStereoMode) {
 	            _this2.stereoEffect.render(_this2.scene, _this2.camera);
@@ -560,6 +616,33 @@
 		}
 	})();
 
+
+/***/ },
+/* 3 */
+/*!*********************!*\
+  !*** ./src/math.js ***!
+  \*********************/
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	/**
+	 * Created by yong on 8/26/16.
+	 */
+	exports.default = {
+	    uv2xyz: function uv2xyz(u, v, r) {
+	        var theta = Math.PI * u * 2.0;
+	        var phi = v * Math.PI;
+	        var x = -Math.cos(theta) * Math.sin(phi) * r;
+	        var z = -Math.sin(theta) * Math.sin(phi) * r;
+	        var y = Math.cos(phi) * r;
+	        // we just need to rotate x to 4pi/3
+	        return { x: -z, y: y, z: x };
+	    }
+	};
 
 /***/ }
 /******/ ]);
