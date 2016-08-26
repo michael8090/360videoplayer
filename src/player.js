@@ -1,5 +1,5 @@
 /* global THREE */
-var OrbitControls = require('three-orbit-controls')(THREE);
+// var OrbitControls = require('three-orbit-controls')(THREE);
 
 function domFromString(htmlString) {
     const parent = document.createElement('div');
@@ -18,7 +18,7 @@ const isWebGLSupported =  (function (){
 
 
 window.Player = module.exports = class Player {
-    constructor({containerId, view, speed} = {}) {
+    constructor({containerId, view, enableSensorControl = false} = {}) {
         const container = document.getElementById(containerId);
         if (!container) {
             throw new Error(`container is not found: ${containerId}`);
@@ -31,17 +31,19 @@ window.Player = module.exports = class Player {
         const camera = new THREE.PerspectiveCamera(view || 75, w / h, 1, 1000);
         camera.position.x = 0.01;
         camera.position.y = 0;
-        camera.position.z = 10;
+        camera.position.z = 0.01;
         this.camera = camera;
 
-        const controls = new OrbitControls(camera);
+        // const controls = new OrbitControls(camera);
         // controls.enablePan = true;
         // controls.enableZoom = true;
-        controls.minDistance = -50;
-        controls.maxDistance = 50;
-        // controls.autoRotate = true;
+        // controls.zoomSpeed = 10;
+        // controls.minDistance = -50;
+        // controls.maxDistance = 50;
+        // controls.autoRotate = false;
+        // this.orbitControls = controls;
         // controls.autoRotateSpeed = speed || 0.5;
-        controls.addEventListener('change', this.render);
+        // controls.addEventListener('change', this.render);
 
         this.scene = new THREE.Scene();
 
@@ -69,11 +71,16 @@ window.Player = module.exports = class Player {
         );
 
         sphere.scale.x = -1;
+        sphere.rotateY(Math.PI * 1.5);
         this.scene.add(sphere);
 
         const renderer = isWebGLSupported ? new THREE.WebGLRenderer() : new THREE.CanvasRenderer();
         renderer.setSize(container.offsetWidth, container.offsetHeight);
         this.renderer = renderer;
+
+        this.sensorControls = new DeviceOrientationController(camera, renderer.domElement);
+        this.sensorControls.connect();
+        this.enableSensor();
 
         container.appendChild(renderer.domElement);
 
@@ -83,6 +90,7 @@ window.Player = module.exports = class Player {
     }
 
     render = () => {
+        this.sensorControls.update();
         this.renderer.render(this.scene, this.camera);
     };
 
@@ -91,15 +99,23 @@ window.Player = module.exports = class Player {
         requestAnimationFrame(this.animate);
     };
 
-    loadVideo(videoUrl = '') {
-        this.video.firstElementChild.setAttribute('src', videoUrl);
-    };
-
     onResize = () => {
         const container = this.container;
         this.camera.aspect = container.offsetWidth / container.offsetHeight;
         this.camera.updateProjectionMatrix();
 
         this.renderer.setSize(container.offsetWidth, container.offsetHeight);
+    };
+
+    loadVideo(videoUrl = '') {
+        this.video.firstElementChild.setAttribute('src', videoUrl);
+    };
+
+    enableSensor = () => {
+        this.sensorControls.enableManualDrag = false;
+    };
+
+    disableSensor = () => {
+        this.sensorControls.enableManualDrag = true;
     };
 };

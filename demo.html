@@ -1,8 +1,9 @@
 <html>
 <head>
-    <script src="lib/three.min.js"></script>
-    <script src="dist/bundle.js"></script>
     <meta name="viewport" content="initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, width=device-width">
+    <script src="lib/three.min.js"></script>
+    <script src="lib/DeviceOrientationController.js"></script>
+    <script src="dist/player.js"></script>
     <style>
         html, body {
             margin: 0;
@@ -15,8 +16,12 @@
 <div id="player" style="width: 100%; height: 100%;">
 </div>
 <script>
-    var player = new Player({containerId: 'player'});
-    player.loadVideo('/result_all_youku.mov');
+    var player = new Player({
+        containerId: 'player',
+        enableSensorControl: true
+    });
+//    player.loadVideo('/result_all_youku.mov');
+    player.loadVideo('/output.mp4');
 </script>
 </body>
 </html>

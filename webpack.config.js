@@ -2,7 +2,7 @@ module.exports = {
     entry: "./src/player.js",
     output: {
         path: __dirname,
-        filename: "dist/bundle.js"
+        filename: "dist/player.js"
     },
     module: {
       loaders: [

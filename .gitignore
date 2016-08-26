@@ -1,3 +1,4 @@
 .idea
 node_modules
-result_all_youku.mov
+*.mov
+*.mp4
