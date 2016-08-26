@@ -20,7 +20,7 @@ const isWebGLSupported = (function () {
 
 
 window.Player = module.exports = class Player {
-    constructor({containerId, view, enableSensorControl = false, isOnStereoMode = false, isFullScreen = false} = {}) {
+    constructor({containerId, enableSensorControl = false, isOnStereoMode = false} = {}) {
         this.isOnStereoMode = isOnStereoMode;
         const container = document.getElementById(containerId);
         if (!container) {
@@ -31,7 +31,7 @@ window.Player = module.exports = class Player {
 
         const w = container.offsetWidth;
         const h = container.offsetHeight;
-        const camera = new THREE.PerspectiveCamera(view || 75, w / h, 1, 1000);
+        const camera = new THREE.PerspectiveCamera(75, w / h, 1, 1000);
         camera.position.x = 0.01;
         camera.position.y = 0;
         camera.position.z = 0.01;
@@ -40,7 +40,7 @@ window.Player = module.exports = class Player {
         this.scene = new THREE.Scene();
 
         const video = domFromString(`
-            <video style="display: none;" preload="auto" id="video" webkit-playsinline crossOrigin="anonymous">
+            <video style="display: none;" loop preload="auto" id="video" webkit-playsinline crossOrigin="anonymous">
                 <source type="video/mp4">
             </video>`
         );
@@ -104,11 +104,12 @@ window.Player = module.exports = class Player {
     };
 
     onResize = () => {
-        const container = this.container;
-        this.camera.aspect = container.offsetWidth / container.offsetHeight;
+        const {container: {offsetWidth: w, offsetHeight: h}} = this;
+        this.camera.aspect = w / h;
         this.camera.updateProjectionMatrix();
 
-        this.renderer.setSize(container.offsetWidth, container.offsetHeight);
+        this.renderer.setSize(w, h);
+        this.stereoEffect.setSize(w, h);
     };
 
     enableSensor = () => {

@@ -82,13 +82,10 @@
 	        var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 	
 	        var containerId = _ref.containerId;
-	        var view = _ref.view;
 	        var _ref$enableSensorCont = _ref.enableSensorControl;
 	        var enableSensorControl = _ref$enableSensorCont === undefined ? false : _ref$enableSensorCont;
 	        var _ref$isOnStereoMode = _ref.isOnStereoMode;
 	        var isOnStereoMode = _ref$isOnStereoMode === undefined ? false : _ref$isOnStereoMode;
-	        var _ref$isFullScreen = _ref.isFullScreen;
-	        var isFullScreen = _ref$isFullScreen === undefined ? false : _ref$isFullScreen;
 	
 	        _classCallCheck(this, Player);
 	
@@ -104,7 +101,7 @@
 	
 	        var w = container.offsetWidth;
 	        var h = container.offsetHeight;
-	        var camera = new THREE.PerspectiveCamera(view || 75, w / h, 1, 1000);
+	        var camera = new THREE.PerspectiveCamera(75, w / h, 1, 1000);
 	        camera.position.x = 0.01;
 	        camera.position.y = 0;
 	        camera.position.z = 0.01;
@@ -112,7 +109,7 @@
 	
 	        this.scene = new THREE.Scene();
 	
-	        var video = domFromString('\n            <video style="display: none;" preload="auto" id="video" webkit-playsinline crossOrigin="anonymous">\n                <source type="video/mp4">\n            </video>');
+	        var video = domFromString('\n            <video style="display: none;" loop preload="auto" id="video" webkit-playsinline crossOrigin="anonymous">\n                <source type="video/mp4">\n            </video>');
 	        this.video = video;
 	        document.body.appendChild(video);
 	
@@ -215,11 +212,15 @@
 	    };
 	
 	    this.onResize = function () {
-	        var container = _this2.container;
-	        _this2.camera.aspect = container.offsetWidth / container.offsetHeight;
+	        var _container = _this2.container;
+	        var w = _container.offsetWidth;
+	        var h = _container.offsetHeight;
+	
+	        _this2.camera.aspect = w / h;
 	        _this2.camera.updateProjectionMatrix();
 	
-	        _this2.renderer.setSize(container.offsetWidth, container.offsetHeight);
+	        _this2.renderer.setSize(w, h);
+	        _this2.stereoEffect.setSize(w, h);
 	    };
 	
 	    this.enableSensor = function () {
