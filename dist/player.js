@@ -75,6 +75,8 @@
 	
 	window.Player = module.exports = (_temp = _class = function () {
 	    function Player() {
+	        var _this = this;
+	
 	        var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 	
 	        var containerId = _ref.containerId;
@@ -101,20 +103,9 @@
 	        camera.position.z = 0.01;
 	        this.camera = camera;
 	
-	        // const controls = new OrbitControls(camera);
-	        // controls.enablePan = true;
-	        // controls.enableZoom = true;
-	        // controls.zoomSpeed = 10;
-	        // controls.minDistance = -50;
-	        // controls.maxDistance = 50;
-	        // controls.autoRotate = false;
-	        // this.orbitControls = controls;
-	        // controls.autoRotateSpeed = speed || 0.5;
-	        // controls.addEventListener('change', this.render);
-	
 	        this.scene = new THREE.Scene();
 	
-	        var video = domFromString('\n            <video style="display: none;" autoplay preload="auto" id="video" loop="true" webkit-playsinline crossOrigin="anonymous">\n                <source type="video/mp4">\n            </video>');
+	        var video = domFromString('\n            <video style="display: none;" preload="auto" id="video" webkit-playsinline crossOrigin="anonymous">\n                <source type="video/mp4">\n            </video>');
 	        this.video = video;
 	        document.body.appendChild(video);
 	
@@ -122,9 +113,6 @@
 	        texture.minFilter = THREE.LinearFilter;
 	        texture.magFilter = THREE.LinearFilter;
 	        texture.format = THREE.RGBFormat;
-	
-	        // var texture = THREE.ImageUtils.loadTexture(image);
-	        // texture.minFilter = THREE.LinearFilter;
 	
 	        var sphere = new THREE.Mesh(new THREE.SphereGeometry(100, 100, 100), new THREE.MeshBasicMaterial({
 	            map: texture
@@ -151,6 +139,9 @@
 	
 	        this.animate();
 	
+	        this.video.addEventListener('ended', function () {
+	            return _this.setTime(0);
+	        });
 	        window.addEventListener('resize', this.onResize);
 	    }
 	
@@ -168,9 +159,7 @@
 	        }
 	    }, {
 	        key: 'setTime',
-	        value: function setTime() {
-	            var time = arguments.length <= 0 || arguments[0] === undefined ? 0 : arguments[0];
-	
+	        value: function setTime(time) {
 	            this.video.currentTime = time;
 	        }
 	    }, {
@@ -187,32 +176,32 @@
 	
 	    return Player;
 	}(), _initialiseProps = function _initialiseProps() {
-	    var _this = this;
+	    var _this2 = this;
 	
 	    this.render = function () {
-	        _this.sensorControls.update();
-	        _this.renderer.render(_this.scene, _this.camera);
+	        _this2.sensorControls.update();
+	        _this2.renderer.render(_this2.scene, _this2.camera);
 	    };
 	
 	    this.animate = function () {
-	        _this.render();
-	        requestAnimationFrame(_this.animate);
+	        _this2.render();
+	        requestAnimationFrame(_this2.animate);
 	    };
 	
 	    this.onResize = function () {
-	        var container = _this.container;
-	        _this.camera.aspect = container.offsetWidth / container.offsetHeight;
-	        _this.camera.updateProjectionMatrix();
+	        var container = _this2.container;
+	        _this2.camera.aspect = container.offsetWidth / container.offsetHeight;
+	        _this2.camera.updateProjectionMatrix();
 	
-	        _this.renderer.setSize(container.offsetWidth, container.offsetHeight);
+	        _this2.renderer.setSize(container.offsetWidth, container.offsetHeight);
 	    };
 	
 	    this.enableSensor = function () {
-	        _this.sensorControls.enableDeviceMove = false;
+	        _this2.sensorControls.enableDeviceMove = false;
 	    };
 	
 	    this.disableSensor = function () {
-	        _this.sensorControls.enableDeviceMove = true;
+	        _this2.sensorControls.enableDeviceMove = true;
 	    };
 	}, _temp);
 

@@ -34,21 +34,10 @@ window.Player = module.exports = class Player {
         camera.position.z = 0.01;
         this.camera = camera;
 
-        // const controls = new OrbitControls(camera);
-        // controls.enablePan = true;
-        // controls.enableZoom = true;
-        // controls.zoomSpeed = 10;
-        // controls.minDistance = -50;
-        // controls.maxDistance = 50;
-        // controls.autoRotate = false;
-        // this.orbitControls = controls;
-        // controls.autoRotateSpeed = speed || 0.5;
-        // controls.addEventListener('change', this.render);
-
         this.scene = new THREE.Scene();
 
         const video = domFromString(`
-            <video style="display: none;" autoplay preload="auto" id="video" loop="true" webkit-playsinline crossOrigin="anonymous">
+            <video style="display: none;" preload="auto" id="video" webkit-playsinline crossOrigin="anonymous">
                 <source type="video/mp4">
             </video>`
         );
@@ -59,9 +48,6 @@ window.Player = module.exports = class Player {
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
         texture.format = THREE.RGBFormat;
-
-        // var texture = THREE.ImageUtils.loadTexture(image);
-        // texture.minFilter = THREE.LinearFilter;
 
         const sphere = new THREE.Mesh(
             new THREE.SphereGeometry(100, 100, 100),
@@ -91,6 +77,7 @@ window.Player = module.exports = class Player {
 
         this.animate();
 
+        this.video.addEventListener('ended', () => this.setTime(0));
         window.addEventListener('resize', this.onResize);
     }
 
@@ -128,7 +115,7 @@ window.Player = module.exports = class Player {
         return this.video.duration;
     }
 
-    setTime(time = 0) {
+    setTime(time) {
         this.video.currentTime = time;
     }
 
