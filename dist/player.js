@@ -118,7 +118,7 @@
 	        texture.magFilter = THREE.LinearFilter;
 	        texture.format = THREE.RGBFormat;
 	
-	        var sphere = new THREE.Mesh(new THREE.SphereGeometry(100, 100, 100), new THREE.MeshBasicMaterial({
+	        var sphere = new THREE.Mesh(new THREE.SphereGeometry(100, 80, 80), new THREE.MeshBasicMaterial({
 	            map: texture
 	        }));
 	
@@ -224,11 +224,11 @@
 	    };
 	
 	    this.enableSensor = function () {
-	        _this2.sensorControls.enableDeviceMove = false;
+	        _this2.sensorControls.enableDeviceMove = true;
 	    };
 	
 	    this.disableSensor = function () {
-	        _this2.sensorControls.enableDeviceMove = true;
+	        _this2.sensorControls.enableDeviceMove = false;
 	    };
 	
 	    this.enableStereoMode = function () {

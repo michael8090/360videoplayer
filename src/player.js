@@ -53,7 +53,7 @@ window.Player = module.exports = class Player {
         texture.format = THREE.RGBFormat;
 
         const sphere = new THREE.Mesh(
-            new THREE.SphereGeometry(100, 100, 100),
+            new THREE.SphereGeometry(100, 80, 80),
             new THREE.MeshBasicMaterial({
                 map: texture
             })
@@ -113,11 +113,11 @@ window.Player = module.exports = class Player {
     };
 
     enableSensor = () => {
-        this.sensorControls.enableDeviceMove = false;
+        this.sensorControls.enableDeviceMove = true;
     };
 
     disableSensor = () => {
-        this.sensorControls.enableDeviceMove = true;
+        this.sensorControls.enableDeviceMove = false;
     };
 
     enableStereoMode = () => this.isOnStereoMode = true;
