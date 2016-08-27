@@ -9,6 +9,7 @@ export  default {
         var z = -Math.sin(theta) * Math.sin(phi);
         var y = Math.cos(phi);
         // we just need to rotate x to 4pi/3
-        return {x: -z, y, z: x};
+        // return {x: -z, y, z: x};
+        return {x, y, z};
     }
 }

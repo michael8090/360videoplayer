@@ -123,7 +123,7 @@ export default class Player {
             })
         );
 
-        sphere.rotateY(-Math.PI * 0.5);
+        sphere.rotateY(Math.PI);
 
         this.scene.add(sphere);
     }
@@ -138,7 +138,7 @@ export default class Player {
     };
 
     onClick = (e) => {
-        const {container: {offsetWidth: w, offsetHeight: h}, renderer, camera} = this;
+        const {renderer, camera} = this;
 
         mouse.x = ( event.clientX / renderer.domElement.width ) * 2 - 1;
         mouse.y = -( event.clientY / renderer.domElement.height ) * 2 + 1;
@@ -184,6 +184,10 @@ export default class Player {
 
     setTime(time) {
         this.video.currentTime = time;
+    }
+
+    getCurrentTime() {
+        return this.video.currentTime;
     }
 
     play() {

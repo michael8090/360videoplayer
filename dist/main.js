@@ -61,9 +61,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _Mesh2 = __webpack_require__(/*! ./Mesh */ 1);
+	var _Mesh3 = __webpack_require__(/*! ./Mesh */ 1);
 	
-	var _Mesh3 = _interopRequireDefault(_Mesh2);
+	var _Mesh4 = _interopRequireDefault(_Mesh3);
 	
 	var _math = __webpack_require__(/*! ./math */ 2);
 	
@@ -86,12 +86,51 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var textureLoader = new THREE.TextureLoader();
 	
-	var AROUND_GAP = 12;
+	var AROUND_ANGLE = Math.PI * 0.5 * 0.35;
+	var ITEM_DISTANCE = 10;
+	
+	// function getStartPos(theta, R, u, v) {
+	//     var dircVec = uvTOxyz(u, v);
+	//     var _x = R * dircVec.x;
+	//     var _y = R * dircVec.y;
+	//     var _z = R * dircVec.z;
+	//
+	//     var _r = Math.sqrt(Math.pow(_x, 2) + Math.pow(_z, 2));
+	//     var r = _y / Math.tan(theta);
+	//
+	//     var x = (r / _r) * _x;
+	//     var z = (r / _r) * _z;
+	//     var y = _y;
+	//     return {x: x, y: y, z: z};
+	// }
 	
 	function getGuideStartVec(u, v) {
-	    var p = _math2.default.uv2xyz(u, v);
-	    return new THREE.Vector3(p.x, p.y, p.z).normalize().multiplyScalar(AROUND_GAP).setY(p.y);
+	    var theta = arguments.length <= 2 || arguments[2] === undefined ? AROUND_ANGLE : arguments[2];
+	    var R = arguments.length <= 3 || arguments[3] === undefined ? ITEM_DISTANCE : arguments[3];
+	
+	    var dircVec = _math2.default.uv2xyz(u, v);
+	    var _x = R * dircVec.x;
+	    var _y = R * dircVec.y;
+	    var _z = R * dircVec.z;
+	
+	    var _r = Math.sqrt(Math.pow(_x, 2) + Math.pow(_z, 2));
+	    var r = _y / Math.tan(theta);
+	
+	    var x = r / _r * _x;
+	    var z = r / _r * _z;
+	    var y = _y;
+	    return new THREE.Vector3(x, y, -z);
 	}
+	
+	// function getGuideStartVec(u, v, angle = AROUND_ANGLE, r = ITEM_DISTANCE) {
+	//     const p = math.uv2xyz(u, v);
+	//     const r1 = Math.cos(angle) * r;
+	//     const r0 = Math.sqrt(p.x, p.z);
+	//     return (new THREE.Vector3(p.x, p.y, p.z))
+	//         .normalize()
+	//         .multiplyScalar(AROUND_GAP)
+	//         .setY(p.y);
+	// }
 	
 	var Arrow = function (_Mesh) {
 	    _inherits(Arrow, _Mesh);
@@ -101,7 +140,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	        var currentMaterialIndex = 0;
 	
-	        var _this = _possibleConstructorReturn(this, (Arrow.__proto__ || Object.getPrototypeOf(Arrow)).call(this, new THREE.PlaneGeometry(1.4, 2), new THREE.MeshPhongMaterial({
+	        var _this = _possibleConstructorReturn(this, (Arrow.__proto__ || Object.getPrototypeOf(Arrow)).call(this, new THREE.PlaneGeometry(1.4, 2), new THREE.MeshBasicMaterial({
 	            map: Arrow.materials[currentMaterialIndex],
 	            transparent: true,
 	            side: THREE.DoubleSide
@@ -110,7 +149,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        ));
 	
 	        _this.currentMaterialIndex = currentMaterialIndex;
-	        _this.rotateX(Math.PI * 0.2);
 	        return _this;
 	    }
 	
@@ -133,17 +171,64 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }]);
 	
 	    return Arrow;
-	}(_Mesh3.default);
+	}(_Mesh4.default);
 	
 	Arrow.materials = [1, 2, 3].map(function (i) {
 	    return textureLoader.load('images/arr' + i + '.png');
 	});
 	
+	var HotPot = function (_Mesh2) {
+	    _inherits(HotPot, _Mesh2);
+	
+	    function HotPot() {
+	        _classCallCheck(this, HotPot);
+	
+	        var size = 1;
+	
+	        var _this2 = _possibleConstructorReturn(this, (HotPot.__proto__ || Object.getPrototypeOf(HotPot)).call(this, new THREE.PlaneGeometry(size, size / 6.179), new THREE.MeshBasicMaterial({
+	            map: HotPot.material,
+	            transparent: true,
+	            side: THREE.DoubleSide
+	        })
+	        // new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} ),
+	        ));
+	
+	        _this2.rotateY(Math.PI);
+	        return _this2;
+	    }
+	
+	    _createClass(HotPot, [{
+	        key: 'update',
+	        value: function update() {}
+	    }, {
+	        key: 'onClick',
+	        value: function onClick() {
+	            alert('hotpot clicked');
+	        }
+	    }]);
+	
+	    return HotPot;
+	}(_Mesh4.default);
+	
+	HotPot.material = textureLoader.load('images/good-anchor.png');
+	
+	
+	function addHotpot(scene, u, v) {
+	    var p = getGuideStartVec(u, v);
+	    var hotpot = new HotPot();
+	    hotpot.position.set(p.x, p.y, p.z);
+	    hotpot.up.set(p.x, 0, p.z);
+	    if (!hotpot.parent) {
+	        scene.add(hotpot);
+	    }
+	}
 	
 	function onArrowPathClick() {
 	    alert('arrow path is clicked');
 	}
-	var unitLength = 2;
+	var unitLength = 0.5;
+	var unitGap = unitLength;
+	var unitTotalSize = unitLength + unitGap;
 	var unitMaterial = textureLoader.load('./images/path-arr.png');
 	var unitMaterialLight = textureLoader.load('./images/path-arr-light.png');
 	function createArrowPath(u, v) {
@@ -151,13 +236,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var ep = _math2.default.uv2xyz(u, v);
 	    var spv = new THREE.Vector3(sp.x, sp.y, sp.z);
 	    var epvu = new THREE.Vector3(ep.x, ep.y, ep.z);
-	    var epv = epvu.multiplyScalar(spv.y / epvu.y);
+	    var epv = epvu.multiplyScalar(ITEM_DISTANCE);
 	    var pathVec = epv.clone().sub(spv);
-	    var unitCount = Math.ceil(pathVec.length() / unitLength);
+	    var unitCount = Math.ceil(pathVec.length() / unitTotalSize);
 	    var group = new THREE.Object3D();
 	    var i = void 0;
 	    for (i = 0; i < unitCount; i++) {
-	        var _u = new THREE.Mesh(new THREE.PlaneGeometry(unitLength * 2, unitLength), new THREE.MeshPhongMaterial({
+	        var _u = new THREE.Mesh(new THREE.PlaneGeometry(unitLength * 2, unitLength), new THREE.MeshBasicMaterial({
 	            map: unitMaterial,
 	            transparent: true,
 	            side: THREE.DoubleSide
@@ -209,6 +294,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var p = getGuideStartVec(u, v);
 	    arrow.position.set(p.x, p.y, p.z);
 	    arrow.up.set(p.x, 0, p.z);
+	    // arrow.position.set(0, 0, 10);
+	    // arrow.up.set(0, 0, 1);
 	    if (!arrow.parent) {
 	        scene.add(arrow);
 	    }
@@ -246,8 +333,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var player = new _player2.default(playerConfig);
 	    var scene = player.scene;
 	
-	    showArrow(scene, 0.5, 0.75);
-	    showPath(scene, 0.5, 0.75);
+	    showArrow(scene, 0.75, 0.75);
+	    showPath(scene, 0.75, 0.6);
+	    addHotpot(scene, 0.7, 0.6);
 	
 	    var p = 0;
 	    document.body.addEventListener('mousemove', function () {
@@ -330,7 +418,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var z = -Math.sin(theta) * Math.sin(phi);
 	        var y = Math.cos(phi);
 	        // we just need to rotate x to 4pi/3
-	        return { x: -z, y: y, z: x };
+	        // return {x: -z, y, z: x};
+	        return { x: x, y: y, z: z };
 	    }
 	};
 
@@ -468,7 +557,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                side: THREE.BackSide
 	            }));
 	
-	            sphere.rotateY(-Math.PI * 0.5);
+	            sphere.rotateY(Math.PI);
 	
 	            this.scene.add(sphere);
 	        }
@@ -498,6 +587,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        key: 'setTime',
 	        value: function setTime(time) {
 	            this.video.currentTime = time;
+	        }
+	    }, {
+	        key: 'getCurrentTime',
+	        value: function getCurrentTime() {
+	            return this.video.currentTime;
 	        }
 	    }, {
 	        key: 'play',
@@ -549,9 +643,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    this.onClick = function (e) {
-	        var _container2 = _this2.container;
-	        var w = _container2.offsetWidth;
-	        var h = _container2.offsetHeight;
 	        var renderer = _this2.renderer;
 	        var camera = _this2.camera;
 	
