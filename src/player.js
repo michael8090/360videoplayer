@@ -35,14 +35,14 @@ function noop() {
  */
 
 export default class Player {
-    constructor({containerId, enableSensorControl = false, isOnStereoMode = false, onUpdate = noop} = {}) {
+    constructor({containerId, enableSensorControl = false, isOnStereoMode = false, onRender = noop} = {}) {
         this.isOnStereoMode = isOnStereoMode;
         const container = document.getElementById(containerId);
         if (!container) {
             throw new Error(`container is not found: ${containerId}`);
         }
 
-        this.onRender = onUpdate;
+        this.onRender = onRender;
 
         this.container = container;
 
