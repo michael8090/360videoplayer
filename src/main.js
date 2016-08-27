@@ -19,7 +19,7 @@ function getGuideStartVec(p) {
         return (new THREE.Vector3(0, -1, 0)).multiplyScalar(ITEM_ABS_GAP);
     }
     const d = R * ITEM_ABS_GAP / surfaceDistance;
-    return rv.normalize().multiplyScalar(d);
+    return rv.normalize().multiplyScalar(d).setY(p.y * R);
 }
 
 class Arrow extends Mesh {
@@ -101,9 +101,9 @@ function hideHotpot() {
     }
 }
 
-const pathLength = 3;
+const pathLength = 5;
 const unitLength = 0.5;
-const unitGap = unitLength;
+const unitGap = unitLength * 0.5;
 const unitTotalSize = unitLength + unitGap;
 const unitMaterial = textureLoader.load('./images/path-arr.png');
 const unitMaterialLight = textureLoader.load('./images/path-arr-light.png');
@@ -116,7 +116,7 @@ function createArrowPath() {
         const epv = epvu.multiplyScalar(ITEM_DISTANCE);
         const pathVec = epv.clone().sub(spv);
 
-        units.forEach(u => {
+        units.forEach((u, i) => {
             const up = pathVec.clone().multiplyScalar(i / units.length).add(sp);
             u.up.set(pathVec.x, pathVec.y, pathVec.z);
             u.position.set(up.x, up.y, up.z);
@@ -139,7 +139,7 @@ function createArrowPath() {
         group.add(u);
     }
 
-    group.currentHighLight = 0;
+    group.currentHighLight = -1;
     group.currentPercentage = 0;
 
     group.setPercentage = (p) => {
@@ -160,8 +160,10 @@ function createArrowPath() {
             return;
         }
         const last = children[this.currentHighLight];
-        last.material.map = unitMaterial;
-        last.material.needUpdate = true;
+        if (last) {
+            last.material.map = unitMaterial;
+            last.material.needUpdate = true;
+        }
 
         this.currentHighLight = i;
         const current = children[i];
@@ -207,6 +209,7 @@ function showPath(scene, pv, onClick) {
         path.children.forEach(c => c.onClick = onClick);
     }
     if (!path.parent) {
+        path.setPosition(pv);
         scene.add(path);
     }
 }
@@ -230,7 +233,7 @@ function getData(onData = noop) {
     xhr.send();
 }
 
-const FRAME_DURATION = 125;
+const FRAME_DURATION = 50;
 //------------------------工具
 function getCurrentFrameIndex(curTime) {
     return Math.floor(curTime / FRAME_DURATION);
@@ -301,7 +304,7 @@ function updatePathPosition(frameMeta, player) {
 
     var pv = getPathPosition(currentPath);
 
-    showPath(player.scene, pv, () => pauseAndShowArrows(paths, player));
+    showPath(player.scene, pv, () => pauseAndShowArrows(frameMeta, player));
 }
 
 function pauseAndShowArrows(frameMeta, player) {
