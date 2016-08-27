@@ -21,6 +21,10 @@ const isWebGLSupported = (function () {
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
+function noop() {
+
+}
+
 /**
  * The core player of the project, it has the following main tasks:
  *     1. load a video and apply the stream video output as a texture to a sphere
@@ -31,12 +35,14 @@ const mouse = new THREE.Vector2();
  */
 
 export default class Player {
-    constructor({containerId, enableSensorControl = false, isOnStereoMode = false} = {}) {
+    constructor({containerId, enableSensorControl = false, isOnStereoMode = false, onUpdate = noop} = {}) {
         this.isOnStereoMode = isOnStereoMode;
         const container = document.getElementById(containerId);
         if (!container) {
             throw new Error(`container is not found: ${containerId}`);
         }
+
+        this.onRender = onUpdate;
 
         this.container = container;
 
@@ -88,6 +94,7 @@ export default class Player {
             }
         });
         this.sensorControls.update();
+        this.onRender();
         if (this.isOnStereoMode) {
             this.stereoEffect.render(this.scene, this.camera);
         } else {
@@ -188,6 +195,11 @@ export default class Player {
 
     getCurrentTime() {
         return this.video.currentTime;
+    }
+
+    isPlaying() {
+        const {video} = this;
+        return video.currentTime > 0 && !video.paused && !video.ended && video.readyState > 2;
     }
 
     play() {

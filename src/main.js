@@ -10,21 +10,6 @@ const textureLoader = new THREE.TextureLoader();
 const AROUND_ANGLE = Math.PI * 0.5 * 0.35;
 const ITEM_DISTANCE = 10;
 
-// function getStartPos(theta, R, u, v) {
-//     var dircVec = uvTOxyz(u, v);
-//     var _x = R * dircVec.x;
-//     var _y = R * dircVec.y;
-//     var _z = R * dircVec.z;
-//
-//     var _r = Math.sqrt(Math.pow(_x, 2) + Math.pow(_z, 2));
-//     var r = _y / Math.tan(theta);
-//
-//     var x = (r / _r) * _x;
-//     var z = (r / _r) * _z;
-//     var y = _y;
-//     return {x: x, y: y, z: z};
-// }
-
 function getGuideStartVec(u, v, theta = AROUND_ANGLE, R = ITEM_DISTANCE) {
     var dircVec = math.uv2xyz(u, v);
     var _x = R * dircVec.x;
@@ -39,16 +24,6 @@ function getGuideStartVec(u, v, theta = AROUND_ANGLE, R = ITEM_DISTANCE) {
     var y = _y;
     return new THREE.Vector3(x, y, -z);
 }
-
-// function getGuideStartVec(u, v, angle = AROUND_ANGLE, r = ITEM_DISTANCE) {
-//     const p = math.uv2xyz(u, v);
-//     const r1 = Math.cos(angle) * r;
-//     const r0 = Math.sqrt(p.x, p.z);
-//     return (new THREE.Vector3(p.x, p.y, p.z))
-//         .normalize()
-//         .multiplyScalar(AROUND_GAP)
-//         .setY(p.y);
-// }
 
 class Arrow extends Mesh {
     static materials = [1, 2, 3].map(i => textureLoader.load(`images/arr${i}.png`));
@@ -108,11 +83,12 @@ class HotPot extends Mesh {
     }
 }
 
-function addHotpot(scene, u, v) {
+function addHotpot(scene, u, v, onClick = noop) {
     const p = getGuideStartVec(u, v);
     const hotpot = new HotPot();
     hotpot.position.set(p.x, p.y, p.z);
     hotpot.up.set(p.x, 0, p.z);
+    hotpot.onClick = onClick;
     if (!hotpot.parent) {
         scene.add(hotpot);
     }
@@ -185,29 +161,31 @@ function createArrowPath(u, v) {
     return group;
 }
 
-const arrow = new Arrow();
+let arrows = [];
 
-function showArrow(scene, u, v) {
+function noop() {}
+
+function clearArrows(scene) {
+    arrows.forEach(scene.remove);
+}
+
+function addArrow(scene, u, v, startTime, onClick = noop) {
+    const arrow = new Arrow();
+    arrow.startTime = startTime;
+    arrow.onClick = onClick;
+
     const p = getGuideStartVec(u, v);
     arrow.position.set(p.x, p.y, p.z);
     arrow.up.set(p.x, 0, p.z);
-    // arrow.position.set(0, 0, 10);
-    // arrow.up.set(0, 0, 1);
-    if (!arrow.parent) {
-        scene.add(arrow);
-    }
+    scene.add(arrow);
 }
 
-function hideArrow(scene) {
-    if (arrow.parent) {
-        scene.remove(arrow);
-    }
-}
 
 const arrowPathName = 'arrow-path';
-function showPath(scene, u, v) {
+function showPath(scene, u, v, onClick = noop) {
     const path = createArrowPath(u, v);
     path.name = arrowPathName;
+    path.onClick = onClick
 
     scene.add(path);
 }
@@ -229,9 +207,9 @@ function hidePath(scene) {
 module.exports = function setupPlayer(playerConfig) {
     const player = new Player(playerConfig);
     const {scene} = player;
-    showArrow(scene, 0.75, 0.75);
-    showPath(scene, 0.75, 0.6);
-    addHotpot(scene, 0.7, 0.6);
+    addArrow(scene, 0.75, 0.75, 10000, (e) => alert('arrow clicked'));
+    showPath(scene, 0.75, 0.6, (e) => alert('path clicked'));
+    addHotpot(scene, 0.7, 0.6, (e) => alert('hotpot clicked'));
 
     let p = 0;
     document.body.addEventListener('mousemove', function () {
