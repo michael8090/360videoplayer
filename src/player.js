@@ -18,12 +18,16 @@ const isWebGLSupported = (function () {
     }
 })();
 
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
 /**
  * The core player of the project, it has the following main tasks:
  *     1. load a video and apply the stream video output as a texture to a sphere
  *     2. provide the main controls of as a player(play, pause, setTime, etc.)
  *     3. has vr and stereo mode, with device sensor control enabled
  *     4. call the `update` method (if any) of the items inside the scene on every loop
+ *     5. call onClick if hit test is passed
  */
 
 export default class Player {
@@ -74,6 +78,7 @@ export default class Player {
 
         this.video.addEventListener('ended', () => this.setTime(0));
         window.addEventListener('resize', this.onResize);
+        window.addEventListener('click', this.onClick);
     }
 
     render = () => {
@@ -130,6 +135,24 @@ export default class Player {
 
         this.renderer.setSize(w, h);
         this.stereoEffect.setSize(w, h);
+    };
+
+    onClick = (e) => {
+        const {container: {offsetWidth: w, offsetHeight: h}, renderer, camera} = this;
+
+        mouse.x = ( event.clientX / renderer.domElement.width ) * 2 - 1;
+        mouse.y = -( event.clientY / renderer.domElement.height ) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+
+        const intersects = raycaster.intersectObjects(this.scene.children, true);
+        intersects.some(i => {
+            const obj = i.object;
+            if (typeof obj.onClick === 'function') {
+                obj.onClick(e);
+                return true;
+            }
+        });
     };
 
     enableSensor = () => {
