@@ -49,15 +49,11 @@
 
 	'use strict';
 	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _class, _temp, _initialiseProps;
-	
-	var _math = __webpack_require__(/*! ./math */ 3);
-	
-	var _math2 = _interopRequireDefault(_math);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
@@ -65,7 +61,6 @@
 	// var OrbitControls = require('three-orbit-controls')(THREE);
 	var StereoEffect = __webpack_require__(/*! three-stereo-effect */ 1)(THREE);
 	var fullscreen = __webpack_require__(/*! screenfull */ 2);
-	
 	
 	function domFromString(htmlString) {
 	    var parent = document.createElement('div');
@@ -82,7 +77,15 @@
 	    }
 	}();
 	
-	window.Player = module.exports = (_temp = _class = function () {
+	/**
+	 * The core player of the project, it has the following main tasks:
+	 *     1. load a video and apply the stream video output as a texture to a sphere
+	 *     2. provide the main controls of as a player(play, pause, setTime, etc.)
+	 *     3. has vr and stereo mode, with device sensor control enabled
+	 *     4. call the `update` method (if any) of the items inside the scene on every loop
+	 */
+	
+	var Player = function () {
 	    function Player() {
 	        var _this = this;
 	
@@ -119,7 +122,6 @@
 	        this.scene = new THREE.Scene();
 	
 	        this.createSphere();
-	        this.createArrow();
 	
 	        var renderer = isWebGLSupported ? new THREE.WebGLRenderer() : new THREE.CanvasRenderer();
 	        renderer.setSize(container.offsetWidth, container.offsetHeight);
@@ -163,51 +165,13 @@
 	
 	            var sphere = new THREE.Mesh(new THREE.SphereGeometry(100, 80, 80), new THREE.MeshBasicMaterial({
 	                map: texture,
+	                // map: (new THREE.TextureLoader()).load('./p.jpg'),
 	                side: THREE.BackSide
 	            }));
 	
 	            sphere.rotateY(-Math.PI * 0.5);
 	
 	            this.scene.add(sphere);
-	        }
-	    }, {
-	        key: 'createArrow',
-	        value: function createArrow() {
-	            var loader = new THREE.TextureLoader();
-	            this.arrowMaterials = [1, 2, 3].map(function (i) {
-	                return loader.load('images/arr' + i + '.png');
-	            });
-	            this.currentArrowIndex = 0;
-	            this.arrow = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 2), new THREE.MeshPhongMaterial({
-	                map: this.arrowMaterials[this.currentArrowIndex],
-	                transparent: true,
-	                side: THREE.DoubleSide
-	            })
-	            // new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} ),
-	
-	            );
-	            // this.arrow.position.x = 0;
-	            // this.arrow.position.y = -3;
-	            // this.arrow.position.z = 10;
-	            // this.arrow.rotateY(-Math.PI * 0.5);
-	            var p = _math2.default.uv2xyz(0.5, 0.5, 10);
-	            this.arrow.position.x = p.x;
-	            this.arrow.position.y = p.y;
-	            this.arrow.position.z = p.z;
-	            this.arrow.rotateX(-Math.PI * 0.2);
-	            this.scene.add(this.arrow);
-	            this.lastDrawTime = Date.now();
-	        }
-	    }, {
-	        key: 'updateArrow',
-	        value: function updateArrow() {
-	            if (Date.now() - this.lastDrawTime < 300) {
-	                return;
-	            }
-	            this.lastDrawTime = Date.now();
-	            this.currentArrowIndex = (this.currentArrowIndex + 1) % this.arrowMaterials.length;
-	            this.arrow.material.map = this.arrowMaterials[this.currentArrowIndex];
-	            this.arrow.material.needUpdate = true;
 	        }
 	    }, {
 	        key: 'enterFullScreen',
@@ -249,11 +213,17 @@
 	    }]);
 	
 	    return Player;
-	}(), _initialiseProps = function _initialiseProps() {
+	}();
+	
+	var _initialiseProps = function _initialiseProps() {
 	    var _this2 = this;
 	
 	    this.render = function () {
-	        _this2.updateArrow();
+	        _this2.scene.traverse(function (item) {
+	            if (typeof item.update === 'function') {
+	                item.update();
+	            }
+	        });
 	        _this2.sensorControls.update();
 	        if (_this2.isOnStereoMode) {
 	            _this2.stereoEffect.render(_this2.scene, _this2.camera);
@@ -294,7 +264,10 @@
 	    this.disableStereoMode = function () {
 	        return _this2.isOnStereoMode = false;
 	    };
-	}, _temp);
+	};
+	
+	exports.default = Player;
+	;
 
 /***/ },
 /* 1 */
@@ -616,33 +589,6 @@
 		}
 	})();
 
-
-/***/ },
-/* 3 */
-/*!*********************!*\
-  !*** ./src/math.js ***!
-  \*********************/
-/***/ function(module, exports) {
-
-	"use strict";
-	
-	Object.defineProperty(exports, "__esModule", {
-	    value: true
-	});
-	/**
-	 * Created by yong on 8/26/16.
-	 */
-	exports.default = {
-	    uv2xyz: function uv2xyz(u, v, r) {
-	        var theta = Math.PI * u * 2.0;
-	        var phi = v * Math.PI;
-	        var x = -Math.cos(theta) * Math.sin(phi) * r;
-	        var z = -Math.sin(theta) * Math.sin(phi) * r;
-	        var y = Math.cos(phi) * r;
-	        // we just need to rotate x to 4pi/3
-	        return { x: -z, y: y, z: x };
-	    }
-	};
 
 /***/ }
 /******/ ]);

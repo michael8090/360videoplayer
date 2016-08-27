@@ -1,8 +1,11 @@
 module.exports = {
-    entry: "./src/player.js",
+    entry: "./src/main.js",
     output: {
         path: __dirname,
-        filename: "dist/player.js"
+        filename: "dist/main.js",
+        library: 'setupPlayer',
+        libraryTarget: 'umd',
+        umdNamedDefine: true
     },
     module: {
       loaders: [

@@ -2,7 +2,6 @@
 // var OrbitControls = require('three-orbit-controls')(THREE);
 var StereoEffect = require('three-stereo-effect')(THREE);
 var fullscreen = require('screenfull');
-import math from './math';
 
 function domFromString(htmlString) {
     const parent = document.createElement('div');
@@ -19,8 +18,15 @@ const isWebGLSupported = (function () {
     }
 })();
 
+/**
+ * The core player of the project, it has the following main tasks:
+ *     1. load a video and apply the stream video output as a texture to a sphere
+ *     2. provide the main controls of as a player(play, pause, setTime, etc.)
+ *     3. has vr and stereo mode, with device sensor control enabled
+ *     4. call the `update` method (if any) of the items inside the scene on every loop
+ */
 
-window.Player = module.exports = class Player {
+export default class Player {
     constructor({containerId, enableSensorControl = false, isOnStereoMode = false} = {}) {
         this.isOnStereoMode = isOnStereoMode;
         const container = document.getElementById(containerId);
@@ -43,7 +49,6 @@ window.Player = module.exports = class Player {
         this.scene = new THREE.Scene();
 
         this.createSphere();
-        this.createArrow();
 
         const renderer = isWebGLSupported ? new THREE.WebGLRenderer() : new THREE.CanvasRenderer();
         renderer.setSize(container.offsetWidth, container.offsetHeight);
@@ -72,7 +77,11 @@ window.Player = module.exports = class Player {
     }
 
     render = () => {
-        this.updateArrow();
+        this.scene.traverse(item => {
+            if (typeof item.update === 'function') {
+                item.update();
+            }
+        });
         this.sensorControls.update();
         if (this.isOnStereoMode) {
             this.stereoEffect.render(this.scene, this.camera);
@@ -104,6 +113,7 @@ window.Player = module.exports = class Player {
             new THREE.SphereGeometry(100, 80, 80),
             new THREE.MeshBasicMaterial({
                 map: texture,
+                // map: (new THREE.TextureLoader()).load('./p.jpg'),
                 side: THREE.BackSide
             })
         );
@@ -111,43 +121,6 @@ window.Player = module.exports = class Player {
         sphere.rotateY(-Math.PI * 0.5);
 
         this.scene.add(sphere);
-    }
-
-    createArrow() {
-        const loader = new THREE.TextureLoader();
-        this.arrowMaterials = [1, 2, 3].map(i => loader.load(`images/arr${i}.png`));
-        this.currentArrowIndex = 0;
-        this.arrow = new THREE.Mesh(
-            new THREE.PlaneGeometry(1.4, 2),
-            new THREE.MeshPhongMaterial({
-                map: this.arrowMaterials[this.currentArrowIndex],
-                transparent: true,
-                side: THREE.DoubleSide
-            })
-            // new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} ),
-
-        );
-        // this.arrow.position.x = 0;
-        // this.arrow.position.y = -3;
-        // this.arrow.position.z = 10;
-        // this.arrow.rotateY(-Math.PI * 0.5);
-        const p = math.uv2xyz(0.5, 0.5, 10);
-        this.arrow.position.x = p.x;
-        this.arrow.position.y = p.y;
-        this.arrow.position.z = p.z;
-        this.arrow.rotateX(-Math.PI * 0.2);
-        this.scene.add(this.arrow);
-        this.lastDrawTime = Date.now();
-    }
-
-    updateArrow() {
-        if (Date.now() - this.lastDrawTime < 300) {
-            return;
-        }
-        this.lastDrawTime = Date.now();
-        this.currentArrowIndex = (this.currentArrowIndex + 1) % this.arrowMaterials.length;
-        this.arrow.material.map = this.arrowMaterials[this.currentArrowIndex];
-        this.arrow.material.needUpdate = true;
     }
 
     onResize = () => {
