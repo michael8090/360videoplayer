@@ -213,7 +213,17 @@ function hidePath(scene) {
     }
 }
 
+function getData(onData = noop) {
+    const xhr = new XMLHttpRequest();
+    xhr.open('get', '/api/video_meta');
+    xhr.onload = () => {
+        onData(JSON.parse(xhr.response));
+    };
+    xhr.send();
+}
+
 module.exports = function setupPlayer(playerConfig) {
+    getData(json => console.log(json));
     const player = new Player(playerConfig);
     const {scene} = player;
     addArrow(scene, 0.75, 0.75, 10000, (e) => alert('arrow clicked'));
