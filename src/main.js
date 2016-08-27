@@ -10,25 +10,9 @@ const textureLoader = new THREE.TextureLoader();
 // const AROUND_ANGLE = Math.PI * 0.5 * 0.35;
 const ITEM_DISTANCE = 10;
 
-// function getGuideStartVec(u, v, theta = AROUND_ANGLE, R = ITEM_DISTANCE) {
-//     var dircVec = math.uv2xyz(u, v);
-//     var _x = R * dircVec.x;
-//     var _y = R * dircVec.y;
-//     var _z = R * dircVec.z;
-//
-//     var _r = Math.sqrt(Math.pow(_x, 2) + Math.pow(_z, 2));
-//     var r = Math.abs(_y / Math.tan(theta));
-//
-//     var x = (r / _r) * _x;
-//     var z = (r / _r) * _z;
-//     var y = _y;
-//     return new THREE.Vector3(x, y, -z);
-// }
-
 const ITEM_ABS_GAP = 5;
-function getGuideStartVec(u, v) {
+function getGuideStartVec(p) {
     const R = ITEM_DISTANCE;
-    const p = math.uv2xyz(u, v);
     const rv = (new THREE.Vector3(p.x, p.y, p.z)).multiplyScalar(R);
     const surfaceDistance = Math.sqrt(R * R - rv.y * rv.y);
     if (surfaceDistance === 0) {
@@ -99,8 +83,8 @@ class HotPot extends Mesh {
 
 const hotpot = new HotPot();
 
-function showHotpot(scene, u, v, onClick) {
-    const p = getGuideStartVec(u, v);
+function showHotpot(scene, pv, onClick) {
+    const p = getGuideStartVec(pv);
     hotpot.position.set(p.x, p.y, p.z);
     hotpot.up.set(p.x, 0, p.z);
     if (onClick) {
@@ -127,9 +111,9 @@ const unitTotalSize = unitLength + unitGap;
 const unitMaterial = textureLoader.load('./images/path-arr.png');
 const unitMaterialLight = textureLoader.load('./images/path-arr-light.png');
 function createArrowPath() {
-    function setPosition(units, u, v) {
-        const sp = getGuideStartVec(u, v);
-        const ep = math.uv2xyz(u, v);
+    function setPosition(units, pv) {
+        const sp = getGuideStartVec(pv);
+        const ep = pv;
         const spv = new THREE.Vector3(sp.x, sp.y, sp.z);
         const epvu = new THREE.Vector3(ep.x, ep.y, ep.z);
         const epv = epvu.multiplyScalar(ITEM_DISTANCE);
@@ -166,8 +150,8 @@ function createArrowPath() {
         group.currentPercentage = p;
     };
 
-    group.setPosition = function (u, v) {
-        setPosition(group.children, u, v);
+    group.setPosition = function (pv) {
+        setPosition(group.children, pv);
     };
 
     group.update = function () {
@@ -206,12 +190,12 @@ function clearArrows() {
     arrows.forEach(a => a.parent.remove(a));
 }
 
-function addArrow(scene, u, v, startTime, onClick = noop) {
+function addArrow(scene, pv, startTime, onClick = noop) {
     const arrow = new Arrow();
     arrow.startTime = startTime;
     arrow.onClick = onClick;
 
-    const p = getGuideStartVec(u, v);
+    const p = getGuideStartVec(pv);
     arrow.position.set(p.x, p.y, p.z);
     arrow.up.set(p.x, 0, p.z);
     scene.add(arrow);
@@ -221,8 +205,8 @@ function addArrow(scene, u, v, startTime, onClick = noop) {
 
 const path = createArrowPath();
 
-function showPath(scene, u, v, onClick) {
-    path.setPosition(u, v);
+function showPath(scene, pv, onClick) {
+    path.setPosition(pv);
     if (onClick) {
         path.onClick = onClick;
     }
@@ -256,14 +240,8 @@ function getCurrentFrameIndex(curTime) {
     return Math.floor(curTime / FRAME_DURATION);
 }
 
-function pos2UV(atv, ath) {
-    var v = (360.0 - ath) / 360.0;
-    var u = (90.0 + atv) / 180.0;
-    return {'v': v, 'u': u};
-}
-
-function getUVofPath(path) {
-    return pos2UV(path.atv, path.ath);
+function getPathPosition(path) {
+    return math.hv2xyz(path.ath, path.atv);
 }
 
 function getPathPercentage(path, curTime) {
@@ -287,20 +265,12 @@ function getCurrentPath(paths, currentTime) {
 }
 
 //-----------------------更新页面
-//锚点
-function drawHotPot(pos) {
-    var uv = pos2UV(pos);
-    updateHotPot(uv.u, uv.v);
-}
-function hotPotClickHandler() {
-
-}
 
 // //箭头
 function drawArrows(paths, player) {
     paths.forEach(function (p) {
-        const uv = getUVofPath(p);
-        addArrow(player.scene, uv.u, uv.v, p.starttime, function () {
+        const pv = getPathPosition(p);
+        addArrow(player.scene, pv, p.starttime, function () {
             onArrowClick.call(this, player);
         });
     });
@@ -331,9 +301,9 @@ function updatePathPosition(paths, player) {
         throw new Error('could not find current path');
     }
 
-    var uv = getUVofPath(currentPath);
+    var pv = getPathPosition(currentPath);
 
-    showPath(player.scene, uv.u, uv.v, () => pauseAndShowArrows(paths, player));
+    showPath(player.scene, pv, () => pauseAndShowArrows(paths, player));
 }
 
 function pauseAndShowArrows(paths, player) {
@@ -385,8 +355,8 @@ function onRender(player, metaData) {
     setPathPercentage(getPathPercentage(currentPath, currentTime));
     updatePathPosition(paths, player);
 
-    var uv = pos2UV(frameMeta.modlePos);
-    showHotpot(scene, uv.u, uv.v, hotPotClickHandler);
+    var pv = math.hv2xyz(frameMeta.modlePos.ath, frameMeta.modlePos.atv);
+    showHotpot(scene, pv, noop);
 }
 
 module.exports = function setupPlayer() {
