@@ -240,7 +240,7 @@ function getData(onData = noop) {
 
 const FRAME_DURATION = 125;
 //------------------------工具
-function getCurIndex(curTime) {
+function getCurrentFrameIndex(curTime) {
     var curIndex = Math.floor(curTime / FRAME_DURATION);
     return curIndex;
 }
@@ -265,6 +265,17 @@ function getPathPercentage(path, curTime) {
     return curLength / length;
 }
 
+function getCurrentPath(paths, currentTime) {
+    var currentPath = null;
+    paths.some(p => {
+        if (p.starttime <= currentTime && p.endtime > currentTime) {
+            currentPath = p;
+            return true;
+        }
+    });
+    return currentPath;
+}
+
 //-----------------------更新页面
 //锚点
 function drawHotPot(pos) {
@@ -280,22 +291,41 @@ function drawArrows(paths, player) {
     paths.forEach(function (p) {
         const uv = getUVofPath(p);
         addArrow(player.scene, uv.u, uv.v, p.starttime, function () {
-            arrowClickHandler.call(this, player);
+            onArrowClick.call(this, player);
         });
     });
 }
-function arrowClickHandler(player) {
-    player.setTime(this.startTime / 1000);
-    player.play();
+
+let lastPath = null;
+
+function onArrowClick(player) {
+    const isJumpingToTime = player.getCurrentTime() < this.startTime;
+
+    if (isJumpingToTime) {
+        lastPath = null;
+        player.setTime(this.startTime);
+    }
+
     clearArrows(player.scene);
+    player.play();
 }
 //路径
 function drawPath(paths, player) {
-    if (paths.length > 0) {
-        var uv = getUVofPath(paths[0]);
-        showPath(player.scene, uv.u, uv.v, () => pauseAndShowArrows(paths, player));
+    if (paths.length < 0) {
+        throw new Error('could not find any path to draw');
     }
+
+    const currentPath = getCurrentPath(paths, player.getCurrentTime());
+
+    if (!currentPath) {
+        throw new Error('could not find current path');
+    }
+
+    var uv = getUVofPath(currentPath);
+
+    showPath(player.scene, uv.u, uv.v, () => pauseAndShowArrows(paths, player));
 }
+
 function pauseAndShowArrows(paths, player) {
     var {scene} = player;
     player.pause();
@@ -313,39 +343,32 @@ function isPathEnding(time, path) {
     return time < endTime && Math.abs(time - startTime) < FRAME_DURATION;
 }
 
-let lastPath = {};
-
 function isSamePath(p1, p2) {
     return p1.starttime === p2.starttime && p1.endtime === p2.endtime;
 }
 
-//-----------------------每帧处理
-function playerUpdateHandler(player, metaData) {
+function onRender(player, metaData) {
     if (!player.isPlaying()) {
         return;
     }
 
-    var currentTime = player.getCurrentTime() * 1000;
-    var curIndex = getCurIndex(currentTime);
-    var meta = metaData[curIndex];
-    var paths = meta.paths;
-    var currentPath = null;
-    paths.some(p => {
-        if (p.starttime <= currentTime && p.endtime > currentTime) {
-            currentPath = p;
-            return true;
-        }
-    });
+    var currentTime = player.getCurrentTime();
+    var currentFrameIndex = getCurrentFrameIndex(currentTime);
+    var frameMeta = metaData[currentFrameIndex];
+    var paths = frameMeta.paths;
+
+    const currentPath = getCurrentPath(paths, currentTime);
 
     if (!currentPath) {
         throw new Error('could not find current path');
     }
 
-    if (!isSamePath(currentPath, lastPath)) {
+    if (lastPath && !isSamePath(currentPath, lastPath)) {
         pauseAndShowArrows(paths, player);
-        lastPath = currentPath;
         return;
     }
+
+    lastPath = currentPath;
 
     // update the items in the current scene
     var {scene} = player;
@@ -354,7 +377,7 @@ function playerUpdateHandler(player, metaData) {
     drawPath(paths, player);
     setPathPercentage(scene, percentage);
 
-    var uv = pos2UV(meta.modlePos);
+    var uv = pos2UV(frameMeta.modlePos);
     showHotpot(scene, uv.u, uv.v, hotPotClickHandler);
 }
 
@@ -365,7 +388,7 @@ module.exports = function setupPlayer() {
             enableSensorControl: false,
             isOnStereoMode: false,
             onRender: (e) => {
-                playerUpdateHandler(player, metaData);
+                onRender(player, metaData);
             }
         });
 
@@ -385,6 +408,6 @@ module.exports = function setupPlayer() {
         // });
 
         player.loadVideo('/output.mp4');
-        player.play();
+        pauseAndShowArrows(metaData[getCurrentFrameIndex(player.getCurrentTime())].paths, player);
     });
 };

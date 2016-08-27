@@ -222,11 +222,11 @@ export default class Player {
     }
 
     setTime(time) {
-        this.video.currentTime = time;
+        this.video.currentTime = time / 1000;
     }
 
     getCurrentTime() {
-        return this.video.currentTime;
+        return this.video.currentTime * 1000;
     }
 
     isPlaying() {
