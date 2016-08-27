@@ -101,10 +101,7 @@ function hideHotpot() {
     }
 }
 
-function onArrowPathClick() {
-    alert('arrow path is clicked');
-}
-const pathLength = 10;
+const pathLength = 3;
 const unitLength = 0.5;
 const unitGap = unitLength;
 const unitTotalSize = unitLength + unitGap;
@@ -138,7 +135,6 @@ function createArrowPath() {
                 side: THREE.DoubleSide
             })
         );
-        u.onClick = onArrowPathClick;
         u.rotateX(Math.PI * 0.5);
         group.add(u);
     }
@@ -176,7 +172,7 @@ function createArrowPath() {
     };
 
     // this one never gets called
-    group.onClick = onArrowPathClick;
+    // group.onClick = onArrowPathClick;
 
     return group;
 }
@@ -187,7 +183,7 @@ function noop() {
 }
 
 function clearArrows() {
-    arrows.forEach(a => a.parent.remove(a));
+    arrows.forEach(a => a.parent && a.parent.remove(a));
 }
 
 function addArrow(scene, pv, startTime, onClick = noop) {
@@ -208,7 +204,7 @@ const path = createArrowPath();
 function showPath(scene, pv, onClick) {
     path.setPosition(pv);
     if (onClick) {
-        path.onClick = onClick;
+        path.children.forEach(c => c.onClick = onClick);
     }
     if (!path.parent) {
         scene.add(path);
@@ -286,11 +282,13 @@ function onArrowClick(player) {
         player.setTime(this.startTime);
     }
 
+    hideHotpot();
     clearArrows();
     player.play();
 }
 //路径
-function updatePathPosition(paths, player) {
+function updatePathPosition(frameMeta, player) {
+    const {paths} = frameMeta;
     if (paths.length < 0) {
         throw new Error('could not find any path to draw');
     }
@@ -306,11 +304,14 @@ function updatePathPosition(paths, player) {
     showPath(player.scene, pv, () => pauseAndShowArrows(paths, player));
 }
 
-function pauseAndShowArrows(paths, player) {
+function pauseAndShowArrows(frameMeta, player) {
     var {scene} = player;
     player.pause();
     hidePath(scene);
-    drawArrows(paths, player);
+    drawArrows(frameMeta.paths, player);
+
+    var pv = math.hv2xyz(frameMeta.modlePos.ath, frameMeta.modlePos.atv);
+    showHotpot(scene, pv, noop);
 }
 
 function isPathBeginning(time, path) {
@@ -344,19 +345,15 @@ function onRender(player, metaData) {
     }
 
     if (lastPath && !isSamePath(currentPath, lastPath)) {
-        pauseAndShowArrows(paths, player);
+        pauseAndShowArrows(frameMeta, player);
         return;
     }
 
     lastPath = currentPath;
 
     // update the items in the current scene
-    var {scene} = player;
     setPathPercentage(getPathPercentage(currentPath, currentTime));
-    updatePathPosition(paths, player);
-
-    var pv = math.hv2xyz(frameMeta.modlePos.ath, frameMeta.modlePos.atv);
-    showHotpot(scene, pv, noop);
+    updatePathPosition(frameMeta, player);
 }
 
 module.exports = function setupPlayer() {
@@ -371,6 +368,6 @@ module.exports = function setupPlayer() {
         });
 
         player.loadVideo('/output.mp4');
-        pauseAndShowArrows(metaData[getCurrentFrameIndex(player.getCurrentTime())].paths, player);
+        pauseAndShowArrows(metaData[getCurrentFrameIndex(player.getCurrentTime())], player);
     });
 };
