@@ -190,7 +190,7 @@ function noop() {
 }
 
 function clearArrows(scene) {
-    arrows.forEach(scene.remove);
+    arrows.forEach(a => scene.remove(a));
 }
 
 function addArrow(scene, u, v, startTime, onClick = noop) {
@@ -283,13 +283,15 @@ function hotPotClickHandler() {
 
 // //箭头
 function drawArrows(paths, player) {
-    paths.forEach(p => {
+    paths.forEach(function (p) {
         const uv = getUVofPath(p);
-        addArrow(player.scene, uv.u, uv.v, p.starttime, () => arrowClickHandler(player));
+        addArrow(player.scene, uv.u, uv.v, p.starttime, function () {
+            arrowClickHandler.call(this, player);
+        });
     });
 }
 function arrowClickHandler(player) {
-    player.setTime(this.starttime);
+    player.setTime(this.startTime);
     player.play();
     clearArrows(player.scene);
 }
