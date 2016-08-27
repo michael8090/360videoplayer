@@ -242,8 +242,6 @@ function getUVofPath(path) {
 
 
 function getPathPerc(path, curTime) {
-    // fixme: remove the following line 
-    curTime += getPathPerc;
     if (curTime >= path.endtime || curTime <= path.starttime) {
         throw new Error('could not get path percentage');
     }
