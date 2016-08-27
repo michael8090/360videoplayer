@@ -210,7 +210,7 @@ const arrowPathName = 'arrow-path';
 function showPath(scene, u, v, onClick = noop) {
     const path = createArrowPath(u, v);
     path.name = arrowPathName;
-    path.onClick = onClick
+    path.onClick = onClick;
 
     scene.add(path);
 }
@@ -256,15 +256,9 @@ function getUVofPath(path) {
 }
 
 //走到路径终点时返回整数1，否则返回(0, 1)浮点数
-
-
-function getPathPerc(path, curTime) {
-    curTime += 42500;
+function getPathPercentage(path, curTime) {
     if (curTime >= path.endtime || curTime <= path.starttime) {
         throw new Error('could not get path percentage');
-    }
-    if (path.endtime === curTime) {
-        return 1;
     }
     var length = path.endtime - path.starttime;
     var curLength = curTime - path.starttime;
@@ -291,7 +285,7 @@ function drawArrows(paths, player) {
     });
 }
 function arrowClickHandler(player) {
-    player.setTime(this.startTime);
+    player.setTime(this.startTime / 1000);
     player.play();
     clearArrows(player.scene);
 }
@@ -299,19 +293,14 @@ function arrowClickHandler(player) {
 function drawPath(paths, player) {
     if (paths.length > 0) {
         var uv = getUVofPath(paths[0]);
-        showPath(player.scene, uv.u, uv.v, () => pathClickHandler(paths, player));
+        showPath(player.scene, uv.u, uv.v, () => pauseAndShowArrows(paths, player));
     }
 }
-function pathClickHandler(paths, player) {
+function pauseAndShowArrows(paths, player) {
     var {scene} = player;
     player.pause();
     hidePath(scene);
     drawArrows(paths, player);
-}
-
-const THRESHOLD = 0.0000001;
-function floatEqual(x, y) {
-    return (Math.abs(x - y) < THRESHOLD);
 }
 
 function isPathBeginning(time, path) {
@@ -319,6 +308,16 @@ function isPathBeginning(time, path) {
     return time >= startTime && Math.abs(time - startTime) < FRAME_DURATION;
 }
 
+function isPathEnding(time, path) {
+    const endTime = path.endtime;
+    return time < endTime && Math.abs(time - startTime) < FRAME_DURATION;
+}
+
+let lastPath = {};
+
+function isSamePath(p1, p2) {
+    return p1.starttime === p2.starttime && p1.endtime === p2.endtime;
+}
 
 //-----------------------每帧处理
 function playerUpdateHandler(player, metaData) {
@@ -326,24 +325,34 @@ function playerUpdateHandler(player, metaData) {
         return;
     }
 
-    var curTime = player.getCurrentTime() * 1000;
-    var curIndex = getCurIndex(curTime);
+    var currentTime = player.getCurrentTime() * 1000;
+    var curIndex = getCurIndex(currentTime);
     var meta = metaData[curIndex];
     var paths = meta.paths;
-    const isBeginning = paths.some(p => isPathBeginning(curTime, p));
-    if (isBeginning) {
-        pathClickHandler(paths, player);
+    var currentPath = null;
+    paths.some(p => {
+        if (p.starttime <= currentTime && p.endtime > currentTime) {
+            currentPath = p;
+            return true;
+        }
+    });
+
+    if (!currentPath) {
+        throw new Error('could not find current path');
+    }
+
+    if (!isSamePath(currentPath, lastPath)) {
+        pauseAndShowArrows(paths, player);
+        lastPath = currentPath;
         return;
     }
 
+    // update the items in the current scene
     var {scene} = player;
     hidePath(scene);
-    if (paths.length > 1) {
-        throw new Error('only one path is allowed when the user is between two points');
-    }
-    var perc = getPathPerc(paths[0], curTime);
+    var percentage = getPathPercentage(currentPath, currentTime);
     drawPath(paths, player);
-    setPathPercentage(scene, perc);
+    setPathPercentage(scene, percentage);
 
     var uv = pos2UV(meta.modlePos);
     showHotpot(scene, uv.u, uv.v, hotPotClickHandler);
@@ -359,8 +368,6 @@ module.exports = function setupPlayer() {
                 playerUpdateHandler(player, metaData);
             }
         });
-        const {scene} = player;
-
 
         // addArrow(scene, 0.75, 0.75, 10000, (e) => alert('arrow clicked'));
         // showPath(scene, 0.75, 0.6, (e) => alert('path clicked'));
