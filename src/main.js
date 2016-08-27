@@ -222,23 +222,134 @@ function getData(onData = noop) {
     xhr.send();
 }
 
-module.exports = function setupPlayer(playerConfig) {
-    getData(json => console.log(json));
-    const player = new Player(playerConfig);
-    const {scene} = player;
-    addArrow(scene, 0.75, 0.75, 10000, (e) => alert('arrow clicked'));
-    showPath(scene, 0.75, 0.6, (e) => alert('path clicked'));
-    showHotpot(scene, 0.7, 0.6, (e) => alert('hotpot clicked'));
+//------------------------工具
+function getCurIndex(curTime) {
+    var curIndex = Math.floor(curTime / 125);
+    return curIndex;
+}
 
-    let p = 0;
-    document.body.addEventListener('mousemove', function () {
-        p += 0.1;
+function pos2UV(atv, ath) {
+    var v = (360.0 - ath) / 360.0;
+    var u = (90.0 + atv) / 180.0;
+    return {'v': v, 'u': u};
+}
 
-        if (p > 1) {
-            p = 0;
+function getUVofPath(path) {
+    return pos2UV(path.atv, path.ath);
+}
+
+//走到路径终点时返回整数1，否则返回(0, 1)浮点数
+
+
+function getPathPerc(path, curTime) {
+    // fixme: remove the following line 
+    curTime += getPathPerc;
+    if (curTime >= path.endtime || curTime <= path.starttime) {
+        throw new Error('could not get path percentage');
+    }
+    if(path.endtime === curTime) {
+        return 1;
+    }
+    var length = path.endtime - path.starttime;
+    var curLength = curTime - path.starttime;
+    return curLength / length;
+}
+
+//-----------------------更新页面
+//锚点
+function drawHotPot(pos) {
+    var uv = pos2UV(pos);
+    updateHotPot(uv.u, uv.v);
+}
+function hotPotClickHandler() {
+
+}
+
+//是否是路径最后一帧 全局变量
+let isLastFrameInPath = false;
+// //箭头
+function drawArrows(paths, player) {
+    if(paths.length > 0) {
+        for(var i=0; i<paths.length; i++) {
+            var uv = getUVofPath(paths[i]);
+            var starttime = paths[i].starttime;
+            showArrow(scene, uv.u, uv.v, starttime, () => arrowClickHandler(player));
         }
+    }
+}
+function arrowClickHandler(player) {
+    player.setTime(this.starttime);
+    player.play();
+    clearArrows(player.scene);
+}
+//路径
+function drawPath(paths, player) {
+    if(paths.length > 0) {
+        var uv = getUVofPath(paths[0]);
+        showPath(player.scene, uv.u, uv.v, () => pathClickHandler(paths, player));
+    }
+}
+function pathClickHandler(paths, player) {
+    var {scene} = player;
+    player.pause();
+    hidePath(scene);
+    drawArrows(paths, player);
+}
 
-        setPathPercentage(scene, p);
+//-----------------------每帧处理
+function playerUpdateHandler(player, metaData) {
+    if(isLastFrameInPath){
+        pathClickHandler(player);
+        return 0;
+    }
+    if(player.isPlaying()){
+        var {scene} = player;
+        hidePath(player.scene);
+        var curTime = player.getCurrentTime() * 1000;
+        var curIndex = getCurIndex(curTime);
+        var meta = metaData[curIndex];
+        var paths = meta.paths;
+        var perc = getPathPerc(paths[0], curTime);
+        if(perc === 1){
+            isLastFrameInPath = true;
+        }
+        drawPath(paths, player);
+        setPathPercentage(player.scene, perc);
+
+        var uv = pos2UV(meta.modlePos);
+        showHotpot(player.scene, uv.u, uv.v, hotPotClickHandler);
+    }
+}
+
+module.exports = function setupPlayer() {
+    getData(metaData => {
+        const player = new Player({
+            containerId: 'player',
+            enableSensorControl: false,
+            isOnStereoMode: false,
+            onRender: (e) => {
+                playerUpdateHandler(player, metaData);
+            }
+        });
+        const {scene} = player;
+
+
+        // addArrow(scene, 0.75, 0.75, 10000, (e) => alert('arrow clicked'));
+        // showPath(scene, 0.75, 0.6, (e) => alert('path clicked'));
+        // showHotpot(scene, 0.7, 0.6, (e) => alert('hotpot clicked'));
+
+        // let p = 0;
+        // document.body.addEventListener('mousemove', function () {
+        //     p += 0.1;
+
+        //     if (p > 1) {
+        //         p = 0;
+        //     }
+
+        //     setPathPercentage(scene, p);
+        // });
+
+        player.loadVideo('/output.mp4');
+        player.play();
     });
-    return player;
 };
