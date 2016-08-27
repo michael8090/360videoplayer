@@ -35,7 +35,16 @@ function noop() {
  */
 
 export default class Player {
-    constructor({containerId, enableSensorControl = false, isOnStereoMode = false, onRender = noop} = {}) {
+    constructor({
+        containerId,
+        enableSensorControl = false,
+        isOnStereoMode = false,
+        onRender = noop,
+        showFullScreenControl = false,
+        showVRControl = false
+    } = {}) {
+        this.showFullScreenControl = showFullScreenControl;
+        this.showVRControll = showVRControl;
         this.isOnStereoMode = isOnStereoMode;
         const container = document.getElementById(containerId);
         if (!container) {
@@ -77,6 +86,29 @@ export default class Player {
         } else {
             this.disableSensor();
         }
+
+        this.controls = domFromString(`
+            <div style="position: fixed; right: 20px; bottom: 20px; ">
+                <label><input id="vr" type="checkbox">VR Mode</label>
+            </div>
+        `);
+
+        this.vrToggle = this.controls.querySelector('#vr');
+
+        this.vrToggle.onchange = e => {
+            const isOnVr = e.target.checked;
+            if (isOnVr) {
+                this.enableSensor();
+                this.enableStereoMode();
+                this.enterFullScreen();
+            } else {
+                this.disableSensor();
+                this.disableStereoMode();
+            }
+            this.onResize();
+        };
+
+        container.appendChild(this.controls);
 
         container.appendChild(renderer.domElement);
 

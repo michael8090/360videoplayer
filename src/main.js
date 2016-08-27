@@ -83,14 +83,23 @@ class HotPot extends Mesh {
     }
 }
 
-function addHotpot(scene, u, v, onClick = noop) {
+const hotpot = new HotPot();
+
+function showHotpot(scene, u, v, onClick) {
     const p = getGuideStartVec(u, v);
-    const hotpot = new HotPot();
     hotpot.position.set(p.x, p.y, p.z);
     hotpot.up.set(p.x, 0, p.z);
-    hotpot.onClick = onClick;
+    if (onClick) {
+        hotpot.onClick = onClick;
+    }
     if (!hotpot.parent) {
         scene.add(hotpot);
+    }
+}
+
+function hideHotpot() {
+    if (hotpot.parent) {
+        hotpot.parent.remove(hotpot);
     }
 }
 
@@ -209,7 +218,7 @@ module.exports = function setupPlayer(playerConfig) {
     const {scene} = player;
     addArrow(scene, 0.75, 0.75, 10000, (e) => alert('arrow clicked'));
     showPath(scene, 0.75, 0.6, (e) => alert('path clicked'));
-    addHotpot(scene, 0.7, 0.6, (e) => alert('hotpot clicked'));
+    showHotpot(scene, 0.7, 0.6, (e) => alert('hotpot clicked'));
 
     let p = 0;
     document.body.addEventListener('mousemove', function () {
