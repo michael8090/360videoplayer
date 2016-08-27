@@ -7,22 +7,35 @@ import Player from './player';
 
 const textureLoader = new THREE.TextureLoader();
 
-const AROUND_ANGLE = Math.PI * 0.5 * 0.35;
+// const AROUND_ANGLE = Math.PI * 0.5 * 0.35;
 const ITEM_DISTANCE = 10;
 
-function getGuideStartVec(u, v, theta = AROUND_ANGLE, R = ITEM_DISTANCE) {
-    var dircVec = math.uv2xyz(u, v);
-    var _x = R * dircVec.x;
-    var _y = R * dircVec.y;
-    var _z = R * dircVec.z;
+// function getGuideStartVec(u, v, theta = AROUND_ANGLE, R = ITEM_DISTANCE) {
+//     var dircVec = math.uv2xyz(u, v);
+//     var _x = R * dircVec.x;
+//     var _y = R * dircVec.y;
+//     var _z = R * dircVec.z;
+//
+//     var _r = Math.sqrt(Math.pow(_x, 2) + Math.pow(_z, 2));
+//     var r = Math.abs(_y / Math.tan(theta));
+//
+//     var x = (r / _r) * _x;
+//     var z = (r / _r) * _z;
+//     var y = _y;
+//     return new THREE.Vector3(x, y, -z);
+// }
 
-    var _r = Math.sqrt(Math.pow(_x, 2) + Math.pow(_z, 2));
-    var r = _y / Math.tan(theta);
-
-    var x = (r / _r) * _x;
-    var z = (r / _r) * _z;
-    var y = _y;
-    return new THREE.Vector3(x, y, -z);
+const ITEM_ABS_GAP = 5;
+function getGuideStartVec(u, v) {
+    const R = ITEM_DISTANCE;
+    const p = math.uv2xyz(u, v);
+    const rv = (new THREE.Vector3(p.x, p.y, p.z)).multiplyScalar(R);
+    const surfaceDistance = Math.sqrt(R * R - rv.y * rv.y);
+    if (surfaceDistance === 0) {
+        return (new THREE.Vector3(0, -1, 0)).multiplyScalar(ITEM_ABS_GAP);
+    }
+    const d = R * ITEM_ABS_GAP / surfaceDistance;
+    return rv.normalize().multiplyScalar(d);
 }
 
 class Arrow extends Mesh {
@@ -39,6 +52,7 @@ class Arrow extends Mesh {
             })
             // new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} ),
         );
+        this.rotateX(Math.PI * 0.5);
         this.currentMaterialIndex = currentMaterialIndex;
     }
 
@@ -63,7 +77,7 @@ class HotPot extends Mesh {
     constructor() {
         const size = 1;
         super(
-            new THREE.PlaneGeometry(size, size/6.179),
+            new THREE.PlaneGeometry(size, size / 6.179),
             new THREE.MeshBasicMaterial({
                 map: HotPot.material,
                 transparent: true,
@@ -172,7 +186,8 @@ function createArrowPath(u, v) {
 
 let arrows = [];
 
-function noop() {}
+function noop() {
+}
 
 function clearArrows(scene) {
     arrows.forEach(scene.remove);
@@ -187,6 +202,7 @@ function addArrow(scene, u, v, startTime, onClick = noop) {
     arrow.position.set(p.x, p.y, p.z);
     arrow.up.set(p.x, 0, p.z);
     scene.add(arrow);
+    arrows.push(arrow);
 }
 
 
@@ -222,9 +238,10 @@ function getData(onData = noop) {
     xhr.send();
 }
 
+const FRAME_DURATION = 125;
 //------------------------工具
 function getCurIndex(curTime) {
-    var curIndex = Math.floor(curTime / 125);
+    var curIndex = Math.floor(curTime / FRAME_DURATION);
     return curIndex;
 }
 
@@ -242,10 +259,11 @@ function getUVofPath(path) {
 
 
 function getPathPerc(path, curTime) {
+    curTime += 42500;
     if (curTime >= path.endtime || curTime <= path.starttime) {
         throw new Error('could not get path percentage');
     }
-    if(path.endtime === curTime) {
+    if (path.endtime === curTime) {
         return 1;
     }
     var length = path.endtime - path.starttime;
@@ -263,17 +281,12 @@ function hotPotClickHandler() {
 
 }
 
-//是否是路径最后一帧 全局变量
-let isLastFrameInPath = false;
 // //箭头
 function drawArrows(paths, player) {
-    if(paths.length > 0) {
-        for(var i=0; i<paths.length; i++) {
-            var uv = getUVofPath(paths[i]);
-            var starttime = paths[i].starttime;
-            showArrow(scene, uv.u, uv.v, starttime, () => arrowClickHandler(player));
-        }
-    }
+    paths.forEach(p => {
+        const uv = getUVofPath(p);
+        addArrow(player.scene, uv.u, uv.v, p.starttime, () => arrowClickHandler(player));
+    });
 }
 function arrowClickHandler(player) {
     player.setTime(this.starttime);
@@ -282,7 +295,7 @@ function arrowClickHandler(player) {
 }
 //路径
 function drawPath(paths, player) {
-    if(paths.length > 0) {
+    if (paths.length > 0) {
         var uv = getUVofPath(paths[0]);
         showPath(player.scene, uv.u, uv.v, () => pathClickHandler(paths, player));
     }
@@ -294,29 +307,44 @@ function pathClickHandler(paths, player) {
     drawArrows(paths, player);
 }
 
+const THRESHOLD = 0.0000001;
+function floatEqual(x, y) {
+    return (Math.abs(x - y) < THRESHOLD);
+}
+
+function isPathBeginning(time, path) {
+    const startTime = path.starttime;
+    return time >= startTime && Math.abs(time - startTime) < FRAME_DURATION;
+}
+
+
 //-----------------------每帧处理
 function playerUpdateHandler(player, metaData) {
-    if(isLastFrameInPath){
-        pathClickHandler(player);
-        return 0;
+    if (!player.isPlaying()) {
+        return;
     }
-    if(player.isPlaying()){
-        var {scene} = player;
-        hidePath(player.scene);
-        var curTime = player.getCurrentTime() * 1000;
-        var curIndex = getCurIndex(curTime);
-        var meta = metaData[curIndex];
-        var paths = meta.paths;
-        var perc = getPathPerc(paths[0], curTime);
-        if(perc === 1){
-            isLastFrameInPath = true;
-        }
-        drawPath(paths, player);
-        setPathPercentage(player.scene, perc);
 
-        var uv = pos2UV(meta.modlePos);
-        showHotpot(player.scene, uv.u, uv.v, hotPotClickHandler);
+    var curTime = player.getCurrentTime() * 1000;
+    var curIndex = getCurIndex(curTime);
+    var meta = metaData[curIndex];
+    var paths = meta.paths;
+    const isBeginning = paths.some(p => isPathBeginning(curTime, p));
+    if (isBeginning) {
+        pathClickHandler(paths, player);
+        return;
     }
+
+    var {scene} = player;
+    hidePath(scene);
+    if (paths.length > 1) {
+        throw new Error('only one path is allowed when the user is between two points');
+    }
+    var perc = getPathPerc(paths[0], curTime);
+    drawPath(paths, player);
+    setPathPercentage(scene, perc);
+
+    var uv = pos2UV(meta.modlePos);
+    showHotpot(scene, uv.u, uv.v, hotPotClickHandler);
 }
 
 module.exports = function setupPlayer() {
