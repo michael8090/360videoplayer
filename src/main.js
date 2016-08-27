@@ -120,19 +120,29 @@ function hideHotpot() {
 function onArrowPathClick() {
     alert('arrow path is clicked');
 }
+const pathLength = 10;
 const unitLength = 0.5;
 const unitGap = unitLength;
 const unitTotalSize = unitLength + unitGap;
 const unitMaterial = textureLoader.load('./images/path-arr.png');
 const unitMaterialLight = textureLoader.load('./images/path-arr-light.png');
-function createArrowPath(u, v) {
-    const sp = getGuideStartVec(u, v);
-    const ep = math.uv2xyz(u, v);
-    const spv = new THREE.Vector3(sp.x, sp.y, sp.z);
-    const epvu = new THREE.Vector3(ep.x, ep.y, ep.z);
-    const epv = epvu.multiplyScalar(ITEM_DISTANCE);
-    const pathVec = epv.clone().sub(spv);
-    const unitCount = Math.ceil(pathVec.length() / unitTotalSize);
+function createArrowPath() {
+    function setPosition(units, u, v) {
+        const sp = getGuideStartVec(u, v);
+        const ep = math.uv2xyz(u, v);
+        const spv = new THREE.Vector3(sp.x, sp.y, sp.z);
+        const epvu = new THREE.Vector3(ep.x, ep.y, ep.z);
+        const epv = epvu.multiplyScalar(ITEM_DISTANCE);
+        const pathVec = epv.clone().sub(spv);
+
+        units.forEach(u => {
+            const up = pathVec.clone().multiplyScalar(i / units.length).add(sp);
+            u.up.set(pathVec.x, pathVec.y, pathVec.z);
+            u.position.set(up.x, up.y, up.z);
+        });
+    }
+
+    const unitCount = Math.ceil(pathLength / unitTotalSize);
     const group = new THREE.Object3D();
     let i;
     for (i = 0; i < unitCount; i++) {
@@ -144,17 +154,20 @@ function createArrowPath(u, v) {
                 side: THREE.DoubleSide
             })
         );
-        const up = pathVec.clone().multiplyScalar(i / unitCount).add(sp);
-        u.position.set(up.x, up.y, up.z);
-        u.up.set(pathVec.x, pathVec.y, pathVec.z);
         u.onClick = onArrowPathClick;
+        u.rotateX(Math.PI * 0.5);
         group.add(u);
     }
+
     group.currentHighLight = 0;
     group.currentPercentage = 0;
 
     group.setPercentage = (p) => {
         group.currentPercentage = p;
+    };
+
+    group.setPosition = function (u, v) {
+        setPosition(group.children, u, v);
     };
 
     group.update = function () {
@@ -189,8 +202,8 @@ let arrows = [];
 function noop() {
 }
 
-function clearArrows(scene) {
-    arrows.forEach(a => scene.remove(a));
+function clearArrows() {
+    arrows.forEach(a => a.parent.remove(a));
 }
 
 function addArrow(scene, u, v, startTime, onClick = noop) {
@@ -206,26 +219,25 @@ function addArrow(scene, u, v, startTime, onClick = noop) {
 }
 
 
-const arrowPathName = 'arrow-path';
-function showPath(scene, u, v, onClick = noop) {
-    const path = createArrowPath(u, v);
-    path.name = arrowPathName;
-    path.onClick = onClick;
+const path = createArrowPath();
 
-    scene.add(path);
-}
-
-function setPathPercentage(scene, percentage) {
-    const path = scene.getObjectByName(arrowPathName);
-    if (path) {
-        path.setPercentage(percentage);
+function showPath(scene, u, v, onClick) {
+    path.setPosition(u, v);
+    if (onClick) {
+        path.onClick = onClick;
+    }
+    if (!path.parent) {
+        scene.add(path);
     }
 }
 
-function hidePath(scene) {
-    const path = scene.getObjectByName(arrowPathName);
-    if (path) {
-        scene.remove(path);
+function setPathPercentage(percentage) {
+    path.setPercentage(percentage);
+}
+
+function hidePath() {
+    if (path.parent) {
+        path.parent.remove(path);
     }
 }
 
@@ -241,8 +253,7 @@ function getData(onData = noop) {
 const FRAME_DURATION = 125;
 //------------------------工具
 function getCurrentFrameIndex(curTime) {
-    var curIndex = Math.floor(curTime / FRAME_DURATION);
-    return curIndex;
+    return Math.floor(curTime / FRAME_DURATION);
 }
 
 function pos2UV(atv, ath) {
@@ -255,7 +266,6 @@ function getUVofPath(path) {
     return pos2UV(path.atv, path.ath);
 }
 
-//走到路径终点时返回整数1，否则返回(0, 1)浮点数
 function getPathPercentage(path, curTime) {
     if (curTime >= path.endtime || curTime <= path.starttime) {
         throw new Error('could not get path percentage');
@@ -306,11 +316,11 @@ function onArrowClick(player) {
         player.setTime(this.startTime);
     }
 
-    clearArrows(player.scene);
+    clearArrows();
     player.play();
 }
 //路径
-function drawPath(paths, player) {
+function updatePathPosition(paths, player) {
     if (paths.length < 0) {
         throw new Error('could not find any path to draw');
     }
@@ -372,10 +382,8 @@ function onRender(player, metaData) {
 
     // update the items in the current scene
     var {scene} = player;
-    hidePath(scene);
-    var percentage = getPathPercentage(currentPath, currentTime);
-    drawPath(paths, player);
-    setPathPercentage(scene, percentage);
+    setPathPercentage(getPathPercentage(currentPath, currentTime));
+    updatePathPosition(paths, player);
 
     var uv = pos2UV(frameMeta.modlePos);
     showHotpot(scene, uv.u, uv.v, hotPotClickHandler);
@@ -391,21 +399,6 @@ module.exports = function setupPlayer() {
                 onRender(player, metaData);
             }
         });
-
-        // addArrow(scene, 0.75, 0.75, 10000, (e) => alert('arrow clicked'));
-        // showPath(scene, 0.75, 0.6, (e) => alert('path clicked'));
-        // showHotpot(scene, 0.7, 0.6, (e) => alert('hotpot clicked'));
-
-        // let p = 0;
-        // document.body.addEventListener('mousemove', function () {
-        //     p += 0.1;
-
-        //     if (p > 1) {
-        //         p = 0;
-        //     }
-
-        //     setPathPercentage(scene, p);
-        // });
 
         player.loadVideo('/output.mp4');
         pauseAndShowArrows(metaData[getCurrentFrameIndex(player.getCurrentTime())].paths, player);
