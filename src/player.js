@@ -141,7 +141,7 @@ export default class Player {
 
     createSphere() {
         const video = domFromString(`
-            <video style="display: none;" loop preload="auto" id="video" webkit-playsinline crossOrigin="anonymous">
+            <video style="display: none;" preload="auto" id="video" webkit-playsinline crossOrigin="anonymous">
                 <source type="video/mp4">
             </video>
         `);

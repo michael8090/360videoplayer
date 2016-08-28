@@ -8,9 +8,9 @@ import Player from './player';
 const textureLoader = new THREE.TextureLoader();
 
 // const AROUND_ANGLE = Math.PI * 0.5 * 0.35;
-const ITEM_DISTANCE = 10;
+const ITEM_DISTANCE = 15;
 
-const ITEM_ABS_GAP = 5;
+const ITEM_ABS_GAP = 7;
 function getGuideStartVec(p) {
     const R = ITEM_DISTANCE;
     const rv = (new THREE.Vector3(p.x, p.y, p.z)).multiplyScalar(R);
@@ -66,7 +66,7 @@ class HotPot extends Mesh {
     static material = textureLoader.load('images/good-anchor.png');
 
     constructor() {
-        const size = 1;
+        const size = 3;
         super(
             new THREE.PlaneGeometry(size, size / 6.179),
             new THREE.MeshBasicMaterial({
@@ -90,10 +90,10 @@ class HotPot extends Mesh {
 
 const hotpot = new HotPot();
 
-function showHotpot(scene, pv, onClick) {
-    const p = getGuideStartVec(pv);
-    hotpot.position.set(p.x, p.y, p.z);
-    hotpot.up.set(p.x, 0, p.z);
+function showHotpot(scene, p, onClick) {
+    // hotpot.position.set(p.x, p.y, p.z);
+    hotpot.position.set(-20, -5, -15);
+    hotpot.rotateY(0.5 * Math.PI);
     if (onClick) {
         hotpot.onClick = onClick;
     }
@@ -103,13 +103,13 @@ function showHotpot(scene, pv, onClick) {
 }
 
 function hotPotClickHandler() {
-    var modal = document.getElementById('modal');
-    modal.innerHTML = '<img id="sofa" src="images/sofa0.png" />';
-    modal.style.display = 'block';
-    var sofa = document.getElementById('sofa');
-    timer = window.setInterval(function() {
-                sofa.src = 'images/sofa' + ++curNum % 6 + '.png';
-            }, 500);
+    // var modal = document.getElementById('modal');
+    // modal.innerHTML = '<img id="sofa" src="images/sofa0.png" />';
+    // modal.style.display = 'block';
+    // var sofa = document.getElementById('sofa');
+    // timer = window.setInterval(function() {
+    //             sofa.src = 'images/sofa' + ++curNum % 6 + '.png';
+    //         }, 500);
 }
 
 function hideHotpot() {
@@ -213,12 +213,17 @@ function addArrow(scene, pv, startTime, onClick = noop) {
     const p = getGuideStartVec(pv);
 
     const tv = new THREE.Vector3(p.x, p.y, p.z);
-    let theta = Math.asin(tv.z / tv.length());
+    let theta = -Math.asin(tv.z / tv.length());
     if (tv.x > 0) {
         theta = Math.PI * 2 - theta;
     }
 
-    arrow.rotation.y = theta;
+    arrow.rotateZ(theta);
+    // arrow.rotateZ(0.5 * Math.PI);
+    // arrow.rotation.y = theta;
+
+    // arrow.rotation.y = Math.PI * 0.25;
+
     arrow.position.set(p.x, p.y, p.z);
     // arrow.up.set(p.x, 0, p.z);
     // arrow.up.set(0, 0, -1);
@@ -253,21 +258,24 @@ function hidePath() {
 
 function getData(onData = noop) {
     const xhr = new XMLHttpRequest();
-    xhr.open('get', '/api/video_meta');
+    xhr.open('get', '/data.json');
     xhr.onload = () => {
         onData(JSON.parse(xhr.response));
     };
     xhr.send();
 }
 
-const FRAME_DURATION = 50;
+// const FRAME_DURATION = 50;
+const FRAME_DURATION = 125;
+
 //------------------------工具
 function getCurrentFrameIndex(curTime) {
     return Math.floor(curTime / FRAME_DURATION);
 }
 
 function getPathPosition(path) {
-    return math.hv2xyz(path.ath, path.atv);
+    // add 45 to make the item lower than the camera
+    return math.hv2xyz(path.ath, path.atv + 45);
 }
 
 function getPathPercentage(path, curTime) {
@@ -334,14 +342,22 @@ function updatePathPosition(frameMeta, player) {
     showPath(player.scene, pv, () => pauseAndShowArrows(frameMeta, player));
 }
 
+let pauseCount = 0;
+
 function pauseAndShowArrows(frameMeta, player) {
     var {scene} = player;
     player.pause();
     hidePath(scene);
     drawArrows(frameMeta.paths, player);
 
-    var pv = math.hv2xyz(frameMeta.modlePos.ath, frameMeta.modlePos.atv);
-    showHotpot(scene, pv, hotPotClickHandler);
+    if (!lastPath) {
+        pauseCount ++;
+    }
+
+    if (pauseCount === 2 && !lastPath) {
+        var pv = math.hv2xyz(frameMeta.modlePos.ath, frameMeta.modlePos.atv);
+        showHotpot(scene, pv, hotPotClickHandler);
+    }
 }
 
 function isPathBeginning(time, path) {
@@ -375,8 +391,8 @@ function onRender(player, metaData) {
     }
 
     if (lastPath && !isSamePath(currentPath, lastPath)) {
-        pauseAndShowArrows(frameMeta, player);
         lastPath = null;
+        pauseAndShowArrows(frameMeta, player);
         return;
     }
 
@@ -398,7 +414,7 @@ module.exports = function setupPlayer() {
             }
         });
 
-        player.loadVideo('/output.mp4');
+        player.loadVideo('/output.mov');
         pauseAndShowArrows(metaData[getCurrentFrameIndex(player.getCurrentTime())], player);
     });
 };

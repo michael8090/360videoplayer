@@ -13,15 +13,17 @@ export  default {
         return {x, y, z};
     },
     hv2xyz(h, v) {
-        h *= Math.PI / 180;
-        v *= Math.PI / 180;
-        const tanH = Math.tan(h);
-        const tanH2 = tanH * tanH;
-        const tanV = Math.tan(v);
-        const tanV2 = tanV * tanV;
-        const x = 1 / Math.sqrt((1 + tanH2) * (1 + tanH2));
-        const y = x * tanH;
-        const z = tanV / Math.sqrt(1 + tanV2);
-        return {x, y: -y, z};
+        var PI = Math.PI;
+        h = h * PI / 180;
+        v = v * PI / 180;
+        var tanH = Math.tan(h);
+        var tanV = Math.tan(v);
+        var _x = tanH;
+        var _y = Math.sqrt(1 + tanH * tanH) * tanV;
+        var tv = Math.sqrt(_x*_x + _y*_y + 1);
+        var x = _x / tv;
+        var y = _y / tv;
+        var z = 1.0 / tv;
+        return {x:x, y: -y, z:z};
     }
 }
