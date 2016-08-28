@@ -95,6 +95,16 @@ function showHotpot(scene, pv, onClick) {
     }
 }
 
+function hotPotClickHandler() {
+    var modal = document.getElementById('modal');
+    modal.innerHTML = '<img id="sofa" src="images/sofa0.png" />';
+    modal.style.display = 'block';
+    var sofa = document.getElementById('sofa');
+    timer = window.setInterval(function() {
+                sofa.src = 'images/sofa' + ++curNum % 6 + '.png';
+            }, 500);
+}
+
 function hideHotpot() {
     if (hotpot.parent) {
         hotpot.parent.remove(hotpot);
@@ -356,7 +366,7 @@ function onRender(player, metaData) {
     updatePathPosition(paths, player);
 
     var pv = math.hv2xyz(frameMeta.modlePos.ath, frameMeta.modlePos.atv);
-    showHotpot(scene, pv, noop);
+    showHotpot(scene, pv, hotPotClickHandler);
 }
 
 module.exports = function setupPlayer() {
