@@ -112,7 +112,7 @@ export default class Player {
 
         container.appendChild(renderer.domElement);
 
-        this.video.addEventListener('ended', () => this.setTime(0));
+        // this.video.addEventListener('ended', () => this.setTime(0));
         window.addEventListener('resize', this.onResize);
         window.addEventListener('click', this.onClick);
 

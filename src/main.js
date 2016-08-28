@@ -349,6 +349,7 @@ function onRender(player, metaData) {
 
     if (lastPath && !isSamePath(currentPath, lastPath)) {
         pauseAndShowArrows(frameMeta, player);
+        lastPath = null;
         return;
     }
 
