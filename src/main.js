@@ -22,6 +22,13 @@ function getGuideStartVec(p) {
     return rv.normalize().multiplyScalar(d).setY(p.y * R);
 }
 
+// function getGuideStartVec(p) {
+//     const R = ITEM_DISTANCE;
+//     const rv = (new THREE.Vector3(p.x, p.y, p.z)).multiplyScalar(R);
+//
+//     return rv.setY(-5);
+// }
+
 class Arrow extends Mesh {
     static materials = [1, 2, 3].map(i => textureLoader.load(`images/arr${i}.png`));
 
@@ -204,8 +211,18 @@ function addArrow(scene, pv, startTime, onClick = noop) {
     arrow.onClick = onClick;
 
     const p = getGuideStartVec(pv);
+
+    const tv = new THREE.Vector3(p.x, p.y, p.z);
+    let theta = Math.asin(tv.z / tv.length());
+    if (tv.x > 0) {
+        theta = Math.PI * 2 - theta;
+    }
+
+    arrow.rotation.y = theta;
     arrow.position.set(p.x, p.y, p.z);
-    arrow.up.set(p.x, 0, p.z);
+    // arrow.up.set(p.x, 0, p.z);
+    // arrow.up.set(0, 0, -1);
+    // arrow.lookAt(0, 0, 1);
     scene.add(arrow);
     arrows.push(arrow);
 }
@@ -214,7 +231,7 @@ function addArrow(scene, pv, startTime, onClick = noop) {
 const path = createArrowPath();
 
 function showPath(scene, pv, onClick) {
-    path.setPosition(pv);
+    // path.setPosition(pv);
     if (onClick) {
         path.children.forEach(c => c.onClick = onClick);
     }

@@ -13,6 +13,8 @@ export  default {
         return {x, y, z};
     },
     hv2xyz(h, v) {
+        h *= Math.PI / 180;
+        v *= Math.PI / 180;
         const tanH = Math.tan(h);
         const tanH2 = tanH * tanH;
         const tanV = Math.tan(v);
@@ -20,6 +22,6 @@ export  default {
         const x = 1 / Math.sqrt((1 + tanH2) * (1 + tanH2));
         const y = x * tanH;
         const z = tanV / Math.sqrt(1 + tanV2);
-        return {x, y, z};
+        return {x, y: -y, z};
     }
 }
