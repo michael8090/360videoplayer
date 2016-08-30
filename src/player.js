@@ -114,7 +114,8 @@ export default class Player {
 
         // this.video.addEventListener('ended', () => this.setTime(0));
         window.addEventListener('resize', this.onResize);
-        window.addEventListener('click', this.onClick);
+        $(document.body).on('click', this.onClick);
+        $(document.body).on('touchend', this.onClick);
 
         requestAnimationFrame(this.animate);
     }
@@ -141,7 +142,7 @@ export default class Player {
 
     createSphere() {
         const video = domFromString(`
-            <video style="display: none;" preload="auto" id="video" webkit-playsinline crossOrigin="anonymous">
+            <video style="display: none;" loop preload="auto" id="video" webkit-playsinline crossOrigin="anonymous">
                 <source type="video/mp4">
             </video>
         `);
@@ -179,8 +180,11 @@ export default class Player {
     onClick = (e) => {
         const {renderer, camera} = this;
 
-        mouse.x = ( event.clientX / renderer.domElement.width ) * 2 - 1;
-        mouse.y = -( event.clientY / renderer.domElement.height ) * 2 + 1;
+        const clientX = e.clientX || e.changedTouches && e.changedTouches[0] && e.changedTouches[0].clientX;
+        const clientY = e.clientY || e.changedTouches && e.changedTouches[0] && e.changedTouches[0].clientY;
+
+        mouse.x = ( clientX / renderer.domElement.width ) * 2 - 1;
+        mouse.y = -( clientY / renderer.domElement.height ) * 2 + 1;
 
         raycaster.setFromCamera(mouse, camera);
 
@@ -242,3 +246,5 @@ export default class Player {
         this.video.pause();
     }
 };
+
+window.Player = Player;

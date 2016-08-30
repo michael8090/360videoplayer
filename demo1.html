@@ -2,10 +2,9 @@
 <head>
     <meta name="viewport"
           content="initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, width=device-width">
-    <script src="lib/zepto.min.js"></script>
     <script src="lib/three.min.js"></script>
     <script src="lib/DeviceOrientationController.js"></script>
-    <script src="dist/main.js"></script>
+    <script src="dist/testmain.js"></script>
     <style>
         html, body {
             margin: 0;
@@ -40,16 +39,7 @@
     window.onerror = function (err) {
         alert(err);
     };
-    var curNum = 0;
-    var timer = null
-    document.getElementById('modal').addEventListener('click', function (e) {
-        e.stopPropagation();
-        clearInterval(timer);
-        timer = null;
-        modal.innerHTML = '';
-        modal.style.display = 'none';
-    });
-    setupPlayer();
+    window.setup();
 </script>
 </body>
 </html>

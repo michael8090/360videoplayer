@@ -92,7 +92,7 @@ const hotpot = new HotPot();
 
 function showHotpot(scene, p, onClick) {
     // hotpot.position.set(p.x, p.y, p.z);
-    hotpot.position.set(-20, -5, -15);
+    hotpot.position.set(6, -0.5, 1);
     hotpot.rotateY(0.5 * Math.PI);
     if (onClick) {
         hotpot.onClick = onClick;
@@ -103,13 +103,13 @@ function showHotpot(scene, p, onClick) {
 }
 
 function hotPotClickHandler() {
-    // var modal = document.getElementById('modal');
-    // modal.innerHTML = '<img id="sofa" src="images/sofa0.png" />';
-    // modal.style.display = 'block';
-    // var sofa = document.getElementById('sofa');
-    // timer = window.setInterval(function() {
-    //             sofa.src = 'images/sofa' + ++curNum % 6 + '.png';
-    //         }, 500);
+    var modal = document.getElementById('modal');
+    modal.innerHTML = '<img id="sofa" src="images/sofa0.png" />';
+    modal.style.display = 'block';
+    var sofa = document.getElementById('sofa');
+    timer = window.setInterval(function () {
+        sofa.src = 'images/sofa' + ++curNum % 6 + '.png';
+    }, 500);
 }
 
 function hideHotpot() {
@@ -265,8 +265,8 @@ function getData(onData = noop) {
     xhr.send();
 }
 
-// const FRAME_DURATION = 50;
-const FRAME_DURATION = 125;
+const FRAME_DURATION = 50;
+// const FRAME_DURATION = 125;
 
 //------------------------工具
 function getCurrentFrameIndex(curTime) {
@@ -354,7 +354,7 @@ function pauseAndShowArrows(frameMeta, player) {
         pauseCount ++;
     }
 
-    if (pauseCount === 2 && !lastPath) {
+    if (pauseCount === 1 && !lastPath) {
         var pv = math.hv2xyz(frameMeta.modlePos.ath, frameMeta.modlePos.atv);
         showHotpot(scene, pv, hotPotClickHandler);
     }
@@ -404,6 +404,27 @@ function onRender(player, metaData) {
 }
 
 module.exports = function setupPlayer() {
+
+    function loadPlayer() {
+        const player = new Player({
+            containerId: 'player',
+            enableSensorControl: false,
+            isOnStereoMode: false,
+            // onRender: (e) => {
+            //     onRender(player, metaData);
+            // }
+        });
+
+        player.loadVideo('/output.mp4');
+        player.play();
+    }
+    // loadPlayer();
+
+    // getData((data) => {
+    //     loadPlayer();
+    // });
+
+
     getData(metaData => {
         const player = new Player({
             containerId: 'player',
@@ -414,7 +435,10 @@ module.exports = function setupPlayer() {
             }
         });
 
-        player.loadVideo('/output.mov');
-        pauseAndShowArrows(metaData[getCurrentFrameIndex(player.getCurrentTime())], player);
+        player.loadVideo('/output.mp4');
+        player.play();
+        // pauseAndShowArrows(metaData[getCurrentFrameIndex(player.getCurrentTime())], player);
     });
+
+
 };
