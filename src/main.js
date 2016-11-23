@@ -437,6 +437,16 @@ module.exports = function setupPlayer() {
 
         player.loadVideo('/output.mp4');
         player.play();
+        document.body.onkeyup = e => {
+            if (e.keyCode === 32) {
+                if (player.isPlaying()) {
+                    pauseAndShowArrows(metaData[getCurrentFrameIndex(player.getCurrentTime())], player);
+                } else {
+                    clearArrows();
+                    player.play();
+                }
+            }
+        };
         // pauseAndShowArrows(metaData[getCurrentFrameIndex(player.getCurrentTime())], player);
     });
 
